@@ -1,23 +1,22 @@
-
 import os
 os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
-
-import ipdb
 
 from DehazeNet import DehazeNet
 from torch.utils.data import DataLoader
 import torch.nn as nn
 from torch import optim
-from torch.autograd import Variable
 import config
 import torchvision.utils
 import torch
 from config import Config
 from DehazingSet import DehazingSet
 
+#%%
 def train(opt):
     #step1: model
-    model = DehazeNet(opt.kernel_size, opt.rate_num, opt.conv, opt.ranking).cuda()
+    model = DehazeNet(opt.kernel_size, opt.rate_num, opt.conv, opt.ranking)
+    if torch.cuda.is_available():
+        model = model.cuda()
     if opt.load_model_path:
         model.load(opt.load_model_path)
     
@@ -45,9 +44,13 @@ def train(opt):
         
         for iteration, (hazy_img, gt_img) in enumerate(train_dataloader):
 
-            input_data = hazy_img.cuda()
-            target_data = gt_img.cuda()
+            input_data = hazy_img
+            target_data = gt_img
             
+            if torch.cuda.is_available():
+                input_data = input_data.cuda()
+                target_data = target_data.cuda()
+                
             print("iteration {} (before back): {}".format(iteration, torch.cuda.memory_allocated()/10e6))
             output_result = model(input_data)
             loss = criterion(output_result, target_data)
@@ -55,7 +58,6 @@ def train(opt):
             optimizer.zero_grad()
             loss.backward()
             print("iteration {} (after back): {}".format(iteration, torch.cuda.memory_allocated()/10e6))
-            ipdb.set_trace()
             optimizer.step()
             
             total_loss += loss.detach()
@@ -72,15 +74,13 @@ def train(opt):
         val_loss = val(model, val_dataloader)
         print("Val Set Loss at Epoch {}: {}".format(epoch, val_loss))
         
-        #if loss does not decrease, decrease learning rate
-        if loss_meter.value()[0] > previous_loss:
-            lr = lr * opt.lr_decay
-            for param_group in optimizer.param_groups:
-                param_group['lr'] = lr
+#        #if loss does not decrease, decrease learning rate
+#        if loss_meter.value()[0] > previous_loss:
+#            lr = lr * opt.lr_decay
+#            for param_group in optimizer.param_groups:
+#                param_group['lr'] = lr
                 
-       
-                  
-
+#%%       
 def val(model, dataloader):
     model.eval() #evaluation mode
     
@@ -99,6 +99,8 @@ def val(model, dataloader):
     
     return loss_meter.value()[0]
 
+
+#%%
 if __name__ == '__main__':
     config = Config()
     train(config)

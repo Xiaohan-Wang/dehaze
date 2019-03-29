@@ -1,4 +1,3 @@
-
 from DehazeNet import DehazeNet
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
