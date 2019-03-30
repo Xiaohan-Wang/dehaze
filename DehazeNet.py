@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torch.autograd import Function
 
+#%%
 class BasicModule(nn.Module):
     """ A class which encapsulates nn.Module and provides interfaces for quick model loading and saving."""
     def __init__(self):
@@ -20,6 +21,7 @@ class BasicModule(nn.Module):
         torch.save(self.state_dict(), name)
         return name         
 
+#%%
 class RankingFunc(Function): 
     # TODO: check whether it's correct or not
     
@@ -63,6 +65,7 @@ def ranking_func(x, ranking_size):
             temp = value.resize(y.size()[0], y.size()[1], ranking_size, ranking_size)
     return x
 
+#%%
 class DehazeBlock(BasicModule):
     def __init__(self, in_channel, out_channel, kernel_size, dilation = 1, conv = True, ranking = False):
         """
@@ -95,7 +98,7 @@ class DehazeBlock(BasicModule):
         elif self.has_conv:
             return x
             
-
+#%%
 class DehazePyramid(BasicModule):
     def __init__(self, in_channel, out_channel, kernel_size, num, conv = True, ranking = False):
         """
@@ -124,6 +127,7 @@ class DehazePyramid(BasicModule):
         y = self.relu(self.bn(self.conv(y)))
         return y
 
+#%%
 class DehazeNet(BasicModule):
     def __init__(self, kernel_size, rate_num, conv = True, ranking = False):
         """
