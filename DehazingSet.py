@@ -23,8 +23,6 @@ class DehazingSet(data.Dataset):
         if self.transform:
             gt_img = self.transform(gt_img)
             hazy_img = self.transform(hazy_img)
-        print("gt Image {}: {}".format(index, gt_img.size()))
-        print("hazy Image {}: {}".format(index, hazy_img.size()))
         return hazy_img, gt_img
     
     def __len__(self):
