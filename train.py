@@ -1,6 +1,10 @@
+#!user/bin/env python3
+#-*-coding:utf-8-*-
+
 import os
 os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 
+import time
 from DehazeNet import DehazeNet
 from torch.utils.data import DataLoader
 import torch.nn as nn
@@ -65,10 +69,11 @@ def train(opt):
             if (iteration + 1) % opt.display_iter == 0:
                 print("Loss at iteration {}: {}".format(iteration, loss))
             if (iteration + 1) == len(train_dataloader):
-                torchvision.utils.save_image(torch.cat((input_data.data, target_data.data, output_result.data), dim = 0))
+                torchvision.utils.save_image(torch.cat((input_data.data, target_data.data, output_result.data), dim = 0),
+                                             'epoch{}.jpg'.format(epoch))
                 
         print("Training Set Loss at Epoch {}: {}".format(epoch, total_loss))
-        model.save(strftime('%m%d_%H:%M:%S') + '_Epoch:' + epoch)
+        model.save(time.strftime('%m%d_%H:%M:%S') + '_Epoch:' + str(epoch) + '.pth')
         
         
         val_loss = val(model, val_dataloader)
@@ -84,7 +89,7 @@ def train(opt):
 def val(model, dataloader):
     model.eval() #evaluation mode
     
-    loss_meter = meter.AverageValueMeter()
+    loss_total = 0
     for iteration, (hazy_img, gt_img) in enumerate(dataloader):
         input_data = hazy_img.cuda()
         target_data = gt_img.cuda()
@@ -93,11 +98,11 @@ def val(model, dataloader):
         
         #TODO: SSIM and PSNR test
         loss = nn.MSELoss()(input_data, target_data)
-        loss_meter.add(loss.data[0])
+        loss_total += loss.detach()
     
     model.train() #back to train mode
     
-    return loss_meter.value()[0]
+    return loss_total
 
 
 #%%
