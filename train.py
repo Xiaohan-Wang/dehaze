@@ -71,12 +71,12 @@ def train(opt):
 #                                             'output_sample/epoch{}.jpg'.format(epoch))
         
         if (epoch + 1) % opt.display_iter == 0:
-            print("Loss at epoch {}: {}".format(iteration, loss))
+            print("Loss at epoch {}: {}".format(epoch + 1, loss))
         if (epoch + 1) % opt.sample_iter == 0:
-            torchvision.utils.save_image(torch.cat((input_data.data, target_data.data, output_result.data), dim = 0),
-                                         'output_sample/epoch{}.jpg'.format(epoch))
+            torchvision.utils.save_image(torch.cat((input_data / 2 + 0.5, target_data / 2 + 0.5, output_result / 2 + 0.5), dim = 0),
+                                         'output_sample/epoch{}.jpg'.format(epoch + 1))
             val_loss = val(model, val_dataloader)
-            print("Val Set Loss at Epoch {}: {}".format(epoch, val_loss))
+            print("Val Set Loss at epoch {}: {}".format(epoch + 1, val_loss))
         #print("Training Set Loss at Epoch {}: {}".format(epoch, total_loss))
         #model.save(time.strftime('%m%d_%H:%M:%S') + '_Epoch:' + str(epoch) + '.pth')
         

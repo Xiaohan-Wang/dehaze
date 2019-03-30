@@ -3,5 +3,5 @@ __pycache__/
 *.py[cod]
 
 *.html
-
 checkpoints/
+output_sample/

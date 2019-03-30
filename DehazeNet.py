@@ -147,10 +147,10 @@ class DehazeNet(BasicModule):
             self.net.add_module('DP1', DehazePyramid(6, 16, kernel_size, rate_num, conv, ranking))
         else:
             self.net.add_module('DP1', DehazePyramid(3, 16, kernel_size, rate_num, conv, ranking))
-        self.net.add_module('DP2', DehazePyramid(16, 32, kernel_size, rate_num, conv, ranking))
-        self.net.add_module('DP3', DehazePyramid(32, 64, kernel_size, rate_num, conv, ranking))
-        self.net.add_module('DP4', DehazePyramid(64, 64, kernel_size, rate_num, conv, ranking))
-        self.net.add_module('DP5', DehazePyramid(64, 3, kernel_size, rate_num, conv, ranking))
+        self.net.add_module('DP2', DehazePyramid(16, 16, kernel_size, rate_num, conv, ranking))
+        self.net.add_module('DP3', DehazePyramid(16, 16, kernel_size, rate_num, conv, ranking))
+        self.net.add_module('DP4', DehazePyramid(16, 16, kernel_size, rate_num, conv, ranking))
+        self.net.add_module('DP5', DehazePyramid(16, 3, kernel_size, rate_num, conv, ranking))
         
     def forward(self, x):
         return self.net(x)

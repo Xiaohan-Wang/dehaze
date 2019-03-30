@@ -13,7 +13,7 @@ class Config(object):
     
     batch_size = 1
     val_batch_size = 1
-    num_workers = 0
+    num_workers = 4
     lr = 0.1 # initial learning rate
     weight_decay = 0.95 
     
