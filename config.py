@@ -17,9 +17,9 @@ class Config(object):
     lr = 0.1 # initial learning rate
     weight_decay = 0.95 
     
-    max_epoch = 100
-    display_iter = 2
-    sample_iter = 5
+    max_epoch = 1000
+    display_iter = 5
+    sample_iter = 10
     
     lr_decay = 0.95
      

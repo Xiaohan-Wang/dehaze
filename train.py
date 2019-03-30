@@ -55,29 +55,33 @@ def train(opt):
                 input_data = input_data.cuda()
                 target_data = target_data.cuda()
                 
-            print("iteration {} (before back): {}".format(iteration, torch.cuda.memory_allocated()/10e6))
             output_result = model(input_data)
             loss = criterion(output_result, target_data)
             
             optimizer.zero_grad()
             loss.backward()
-            print("iteration {} (after back): {}".format(iteration, torch.cuda.memory_allocated()/10e6))
             optimizer.step()
             
             total_loss += loss.detach()
             
-            if (iteration + 1) % opt.display_iter == 0:
-                print("Loss at iteration {}: {}".format(iteration, loss))
-            if (iteration + 1) == len(train_dataloader):
-                torchvision.utils.save_image(torch.cat((input_data.data, target_data.data, output_result.data), dim = 0),
-                                             'epoch{}.jpg'.format(epoch))
-                
-        print("Training Set Loss at Epoch {}: {}".format(epoch, total_loss))
-        model.save(time.strftime('%m%d_%H:%M:%S') + '_Epoch:' + str(epoch) + '.pth')
+#            if (iteration + 1) % opt.display_iter == 0:
+#                print("Loss at iteration {}: {}".format(iteration, loss))
+#            if (iteration + 1) == len(train_dataloader):
+#                torchvision.utils.save_image(torch.cat((input_data.data, target_data.data, output_result.data), dim = 0),
+#                                             'output_sample/epoch{}.jpg'.format(epoch))
+        
+        if (epoch + 1) % opt.display_iter == 0:
+            print("Loss at epoch {}: {}".format(iteration, loss))
+        if (epoch + 1) % opt.sample_iter == 0:
+            torchvision.utils.save_image(torch.cat((input_data.data, target_data.data, output_result.data), dim = 0),
+                                         'output_sample/epoch{}.jpg'.format(epoch))
+            val_loss = val(model, val_dataloader)
+            print("Val Set Loss at Epoch {}: {}".format(epoch, val_loss))
+        #print("Training Set Loss at Epoch {}: {}".format(epoch, total_loss))
+        #model.save(time.strftime('%m%d_%H:%M:%S') + '_Epoch:' + str(epoch) + '.pth')
         
         
-        val_loss = val(model, val_dataloader)
-        print("Val Set Loss at Epoch {}: {}".format(epoch, val_loss))
+
         
 #        #if loss does not decrease, decrease learning rate
 #        if loss_meter.value()[0] > previous_loss:
@@ -91,8 +95,11 @@ def val(model, dataloader):
     
     loss_total = 0
     for iteration, (hazy_img, gt_img) in enumerate(dataloader):
-        input_data = hazy_img.cuda()
-        target_data = gt_img.cuda()
+        input_data = hazy_img
+        target_data = gt_img
+        if torch.cuda.is_available():
+            input_data = input_data.cuda()
+            target_data = target_data.cuda()
         
         output_result = model(input_data)
         

@@ -1,6 +1,7 @@
 #!user/bin/env python
 #-*-coding:utf-8-*-
 
+import time
 import torch
 import torch.nn as nn
 from torch.autograd import Function
@@ -19,7 +20,7 @@ class BasicModule(nn.Module):
         """Save a model to checkpoints/"""
         prefix = 'checkpoints/'
         if name == None:
-            name = strftime("%m%d_%H:%M:%S.pth")
+            name = time.strftime("%m%d_%H:%M:%S.pth")
         name = prefix + name
         torch.save(self.state_dict(), name)
         return name         
