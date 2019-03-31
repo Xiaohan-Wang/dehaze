@@ -118,8 +118,6 @@ class DehazePyramid(BasicModule):
             self.db.append(DehazeBlock(in_channel, out_channel, kernel_size, dilation = 2**i, 
                                        conv = conv, ranking = ranking))
         self.conv = nn.Conv2d(out_channel * num, out_channel, (1, 1), 1, bias = True)
-        self.bn = nn.BatchNorm2d(out_channel)
-        self.relu = nn.ReLU(inplace = True)
         
         self.num = num
         
@@ -128,7 +126,7 @@ class DehazePyramid(BasicModule):
         for i in range(self.num):
             y.append(self.db[i](x))
         y = torch.cat(y, dim = 1)
-        y = self.relu(self.bn(self.conv(y)))
+        y = self.conv(y)
         return y
 
 #%%
@@ -147,9 +145,17 @@ class DehazeNet(BasicModule):
             self.net.add_module('DP1', DehazePyramid(6, 16, kernel_size, rate_num, conv, ranking))
         else:
             self.net.add_module('DP1', DehazePyramid(3, 16, kernel_size, rate_num, conv, ranking))
+        self.net.add_module('BN1', nn.BatchNorm2d(16))
+        self.net.add_module('ReLU1', nn.ReLU(inplace = True))
         self.net.add_module('DP2', DehazePyramid(16, 16, kernel_size, rate_num, conv, ranking))
+        self.net.add_module('BN2', nn.BatchNorm2d(16))
+        self.net.add_module('ReLU2', nn.ReLU(inplace = True))
         self.net.add_module('DP3', DehazePyramid(16, 16, kernel_size, rate_num, conv, ranking))
+        self.net.add_module('BN3', nn.BatchNorm2d(16))
+        self.net.add_module('ReLU3', nn.ReLU(inplace = True))
         self.net.add_module('DP4', DehazePyramid(16, 16, kernel_size, rate_num, conv, ranking))
+        self.net.add_module('BN4', nn.BatchNorm2d(16))
+        self.net.add_module('ReLU4', nn.ReLU(inplace = True))
         self.net.add_module('DP5', DehazePyramid(16, 3, kernel_size, rate_num, conv, ranking))
         
     def forward(self, x):
