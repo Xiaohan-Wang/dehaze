@@ -104,7 +104,7 @@ def val(model, dataloader):
         output_result = model(input_data)
         
         #TODO: SSIM and PSNR test
-        loss = nn.MSELoss()(input_data, target_data)
+        loss = nn.MSELoss()(output_result, target_data)
         loss_total += loss.detach()
     
     model.train() #back to train mode

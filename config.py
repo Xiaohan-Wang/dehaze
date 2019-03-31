@@ -9,17 +9,17 @@ class Config(object):
     kernel_size = 3
     rate_num = 5
     conv = True
-    ranking = False
+    ranking = True
     
-    batch_size = 1
+    batch_size = 10
     val_batch_size = 1
     num_workers = 4
-    lr = 0.1 # initial learning rate
-    weight_decay = 0.95 
+    lr = 0.003 # initial learning rate
+    weight_decay = 0.0001 
     
-    max_epoch = 1000
-    display_iter = 5
-    sample_iter = 10
+    max_epoch = 1500
+    display_iter = 25
+    sample_iter = 50
     
     lr_decay = 0.95
      

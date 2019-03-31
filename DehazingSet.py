@@ -10,7 +10,7 @@ class DehazingSet(data.Dataset):
         self.gt_imgs = [root + '/gt/' + img for img in gt_imgs]
         self.hazy_imgs = [root + '/hazy/' + img for img in hazy_imgs]
         self.transform = T.Compose([
-            T.CenterCrop(32),
+            T.CenterCrop(128),
             T.ToTensor(),
             T.Normalize(mean = [.5, .5, .5], std = [.5, .5, .5])
         ])

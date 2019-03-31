@@ -141,22 +141,23 @@ class DehazeNet(BasicModule):
         """
         super().__init__()
         self.net = nn.Sequential()
-        if conv and ranking:
-            self.net.add_module('DP1', DehazePyramid(6, 16, kernel_size, rate_num, conv, ranking))
-        else:
-            self.net.add_module('DP1', DehazePyramid(3, 16, kernel_size, rate_num, conv, ranking))
-        self.net.add_module('BN1', nn.BatchNorm2d(16))
+#        if conv and ranking:
+#            self.net.add_module('DP1', DehazePyramid(6, 8, kernel_size, rate_num, conv, ranking))
+#        else:
+#            self.net.add_module('DP1', DehazePyramid(3, 8, kernel_size, rate_num, conv, ranking))
+        self.net.add_module('DP1', DehazePyramid(3, 8, kernel_size, rate_num, conv, ranking))
+        self.net.add_module('BN1', nn.BatchNorm2d(8))
         self.net.add_module('ReLU1', nn.ReLU(inplace = True))
-        self.net.add_module('DP2', DehazePyramid(16, 16, kernel_size, rate_num, conv, ranking))
-        self.net.add_module('BN2', nn.BatchNorm2d(16))
+        self.net.add_module('DP2', DehazePyramid(8, 8, kernel_size, rate_num, conv, ranking))
+        self.net.add_module('BN2', nn.BatchNorm2d(8))
         self.net.add_module('ReLU2', nn.ReLU(inplace = True))
-        self.net.add_module('DP3', DehazePyramid(16, 16, kernel_size, rate_num, conv, ranking))
-        self.net.add_module('BN3', nn.BatchNorm2d(16))
+        self.net.add_module('DP3', DehazePyramid(8, 8, kernel_size, rate_num, conv, ranking))
+        self.net.add_module('BN3', nn.BatchNorm2d(8))
         self.net.add_module('ReLU3', nn.ReLU(inplace = True))
-        self.net.add_module('DP4', DehazePyramid(16, 16, kernel_size, rate_num, conv, ranking))
-        self.net.add_module('BN4', nn.BatchNorm2d(16))
+        self.net.add_module('DP4', DehazePyramid(8, 8, kernel_size, rate_num, conv, ranking))
+        self.net.add_module('BN4', nn.BatchNorm2d(8))
         self.net.add_module('ReLU4', nn.ReLU(inplace = True))
-        self.net.add_module('DP5', DehazePyramid(16, 3, kernel_size, rate_num, conv, ranking))
+        self.net.add_module('DP5', DehazePyramid(8, 3, kernel_size, rate_num, conv, ranking))
         
     def forward(self, x):
         return self.net(x)
