@@ -1,19 +1,15 @@
 import os
 from PIL import Image
 from torch.utils import data
-from torchvision import transforms as T
 
 class DehazingSet(data.Dataset):
-    def __init__(self, root):
+    def __init__(self, root, transform):
         gt_imgs = os.listdir(root + '/gt')
         hazy_imgs = os.listdir(root + '/hazy')
         self.gt_imgs = [root + '/gt/' + img for img in gt_imgs]
         self.hazy_imgs = [root + '/hazy/' + img for img in hazy_imgs]
-        self.transform = T.Compose([
-            T.CenterCrop(128),
-            T.ToTensor(),
-            T.Normalize(mean = [.5, .5, .5], std = [.5, .5, .5])
-        ])
+        self.transform = transform
+
     
     def __getitem__(self, index):
         gt_path = self.gt_imgs[index]

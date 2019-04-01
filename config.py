@@ -11,7 +11,8 @@ class Config(object):
     conv = True
     ranking = True
     
-    batch_size = 10
+    img_size = 4
+    batch_size = 1
     val_batch_size = 1
     num_workers = 4
     lr = 0.003 # initial learning rate

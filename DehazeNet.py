@@ -26,38 +26,37 @@ class BasicModule(nn.Module):
         return name         
 
 #%%
-class RankingFunc(Function): 
-    # TODO: check whether it's correct or not
-    
-    @staticmethod
-    def forward(ctx, x, ranking_size): 
-        c, h, w = x.size()
-        ctx.y_index = torch.arange(0, h*w).resize(h, w).unsqueeze(0).repeat(c, 1, 1)
-        ctx.ranking_size = ranking_size
-        
-        h_num = h // ranking_size
-        w_num = w // ranking_size
-        
-        ipdb.set_trace()
-        #TODO: what is the dimension of x????
-        for i in range(h_num):
-            for j in range(w_num):
-                temp1 = x[:, :, i * ranking_size : (i + 1) * ranking_size, j * ranking_size : (j + 1) * ranking_size]
-                temp2 = ctx.y_index[:, :, i * ranking_size : (i + 1) * ranking_size, j * ranking_size : (j + 1) * ranking_size]
-                value, index = torch.sort(temp1.resize(c, ranking_size ** 2))
-                temp1 = value.resize(c, ranking_size, ranking_size)
-                temp2 = temp2.resize(c, ranking_size ** 2)[index].resize(c, ranking_size, ranking_size)
-        return x
-    
-    @staticmethod
-    def backward(ctx, grad_y):
-        c, h, w = grad_y.size()[0], grad_y.size()[1], grad_y.size()[2]
-        grad_y = grad_y.resize(c, ctx.ranking_size ** 2)
-        _, index = ctx.y_index.resize(c, ctx.ranking_size ** 2).sort()
-        for i in range(c):
-            grad_y[c] = grad_y[c][index[c]]
-        grad_y = grad_y.resize(c, h, w)
-        return grad_y, None
+#class RankingFunc(Function): 
+#    # TODO: check whether it's correct or not
+#    
+#    @staticmethod
+#    def forward(ctx, x, ranking_size): 
+#        p, c, h, w = x.size()
+#        ctx.y_index = torch.arange(0, h*w).resize(h, w).unsqueeze(0).repeat(p, c, 1, 1)
+#        ctx.ranking_size = ranking_size
+#        
+#        h_num = h // ranking_size
+#        w_num = w // ranking_size
+#        
+#        #TODO: what is the dimension of x????
+#        for i in range(h_num):
+#            for j in range(w_num):
+#                temp1 = x[:, :, i * ranking_size : (i + 1) * ranking_size, j * ranking_size : (j + 1) * ranking_size]
+#                temp2 = ctx.y_index[:, :, i * ranking_size : (i + 1) * ranking_size, j * ranking_size : (j + 1) * ranking_size]
+#                value, index = torch.sort(temp1.resize(c, ranking_size ** 2))
+#                temp1 = value.resize(c, ranking_size, ranking_size)
+#                temp2 = temp2.resize(c, ranking_size ** 2)[index].resize(c, ranking_size, ranking_size)
+#        return x
+#    
+#    @staticmethod
+#    def backward(ctx, grad_y):
+#        c, h, w = grad_y.size()[0], grad_y.size()[1], grad_y.size()[2]
+#        grad_y = grad_y.resize(c, ctx.ranking_size ** 2)
+#        _, index = ctx.y_index.resize(c, ctx.ranking_size ** 2).sort()
+#        for i in range(c):
+#            grad_y[c] = grad_y[c][index[c]]
+#        grad_y = grad_y.resize(c, h, w)
+#        return grad_y, None
     
 def ranking_func(x, ranking_size):      
     h_num = x.size()[2] // ranking_size
@@ -65,8 +64,8 @@ def ranking_func(x, ranking_size):
     for i in range(h_num):
         for j in range(w_num):
             temp = x[:, :, i * ranking_size : (i + 1) * ranking_size, j * ranking_size : (j + 1) * ranking_size]
-            value = torch.sort(temp.resize(y.size()[0], y.size()[1], ranking_size * ranking_size))[0]
-            temp = value.resize(y.size()[0], y.size()[1], ranking_size, ranking_size)
+            value = torch.sort(temp.resize(x.size()[0], x.size()[1], ranking_size * ranking_size))[0]
+            temp = value.resize(x.size()[0], x.size()[1], ranking_size, ranking_size)
     return x
 
 #%%
@@ -94,7 +93,8 @@ class DehazeBlock(BasicModule):
     def forward(self, x):
         x = self.relu(self.bn(self.conv(x)))
         if self.has_ranking:
-            y = RankingFunc.Apply(x, self.raning_size)
+            y = ranking_func(x, self.ranking_size)
+#            y = RankingFunc.apply(x, self.ranking_size)
         if self.has_ranking and self.has_conv:
             return torch.cat((x, y), dim = 1)
         elif self.has_ranking:
@@ -117,8 +117,10 @@ class DehazePyramid(BasicModule):
         for i in range(num):
             self.db.append(DehazeBlock(in_channel, out_channel, kernel_size, dilation = 2**i, 
                                        conv = conv, ranking = ranking))
-        self.conv = nn.Conv2d(out_channel * num, out_channel, (1, 1), 1, bias = True)
-        
+        if conv and ranking:
+            self.conv = nn.Conv2d(out_channel * num * 2, out_channel, (1, 1), 1, bias = True)
+        else:
+            self.conv = nn.Conv2d(out_channel * num, out_channel, (1, 1), 1, bias = True)
         self.num = num
         
     def forward(self, x):
