@@ -26,47 +26,52 @@ class BasicModule(nn.Module):
         return name         
 
 #%%
-#class RankingFunc(Function): 
-#    # TODO: check whether it's correct or not
-#    
-#    @staticmethod
-#    def forward(ctx, x, ranking_size): 
-#        p, c, h, w = x.size()
-#        ctx.y_index = torch.arange(0, h*w).resize(h, w).unsqueeze(0).repeat(p, c, 1, 1)
-#        ctx.ranking_size = ranking_size
-#        
-#        h_num = h // ranking_size
-#        w_num = w // ranking_size
-#        
-#        #TODO: what is the dimension of x????
-#        for i in range(h_num):
-#            for j in range(w_num):
-#                temp1 = x[:, :, i * ranking_size : (i + 1) * ranking_size, j * ranking_size : (j + 1) * ranking_size]
-#                temp2 = ctx.y_index[:, :, i * ranking_size : (i + 1) * ranking_size, j * ranking_size : (j + 1) * ranking_size]
-#                value, index = torch.sort(temp1.resize(c, ranking_size ** 2))
-#                temp1 = value.resize(c, ranking_size, ranking_size)
-#                temp2 = temp2.resize(c, ranking_size ** 2)[index].resize(c, ranking_size, ranking_size)
-#        return x
-#    
-#    @staticmethod
-#    def backward(ctx, grad_y):
-#        c, h, w = grad_y.size()[0], grad_y.size()[1], grad_y.size()[2]
-#        grad_y = grad_y.resize(c, ctx.ranking_size ** 2)
-#        _, index = ctx.y_index.resize(c, ctx.ranking_size ** 2).sort()
-#        for i in range(c):
-#            grad_y[c] = grad_y[c][index[c]]
-#        grad_y = grad_y.resize(c, h, w)
-#        return grad_y, None
+class RankingFunc(Function): 
+    # TODO: check whether it's correct or not
     
-def ranking_func(x, ranking_size):      
-    h_num = x.size()[2] // ranking_size
-    w_num = x.size()[3] // ranking_size
-    for i in range(h_num):
-        for j in range(w_num):
-            temp = x[:, :, i * ranking_size : (i + 1) * ranking_size, j * ranking_size : (j + 1) * ranking_size]
-            value = torch.sort(temp.resize(x.size()[0], x.size()[1], ranking_size * ranking_size))[0]
-            temp = value.resize(x.size()[0], x.size()[1], ranking_size, ranking_size)
-    return x
+    @staticmethod
+    def forward(ctx, x, ranking_size): 
+        p, c, h, w = x.size()
+        y = torch.empty(x.size()).cuda()
+        y.requires_grad = True
+        ctx.index = torch.arange(0, h*w).view(h, w).unsqueeze(0).repeat(p, c, 1, 1)
+        ctx.ranking_size = ranking_size
+        
+        h_num = h // ranking_size
+        w_num = w // ranking_size
+        
+        #TODO: what is the dimension of x????
+        for i in range(h_num):
+            for j in range(w_num):
+                temp1 = x[:, :, i * ranking_size : (i + 1) * ranking_size, j * ranking_size : (j + 1) * ranking_size].clone()
+                temp2 = ctx.index[:, :, i * ranking_size : (i + 1) * ranking_size, j * ranking_size : (j + 1) * ranking_size].clone()
+                value, index = torch.sort(temp1.view(p, c, ranking_size ** 2))
+                temp1 = value.view(p, c, ranking_size, ranking_size)
+                y[:, :, i * ranking_size : (i + 1) * ranking_size, j * ranking_size : (j + 1) * ranking_size] = temp1
+                temp2 = temp2.view(p, c, ranking_size ** 2).view(-1)
+                index = index.view(-1)
+                temp2 = temp2[index].view(p, c, ranking_size, ranking_size)
+                ctx.index[:, :, i * ranking_size : (i + 1) * ranking_size, j * ranking_size : (j + 1) * ranking_size] = temp2
+        return y
+    
+    @staticmethod
+    def backward(ctx, grad_y):
+        p, c, h, w = grad_y.size()
+        grad_y = grad_y.view(p, c, -1).contiguous()
+        _, index = ctx.index.view(p, c, -1).sort()
+        grad_y = grad_y.view(-1)[index.view(-1)]
+        grad_y = grad_y.view(p, c, h, w)
+        return grad_y, None
+    
+#def ranking_func(x, ranking_size):      
+#    h_num = x.size()[2] // ranking_size
+#    w_num = x.size()[3] // ranking_size
+#    for i in range(h_num):
+#        for j in range(w_num):
+#            temp = x[:, :, i * ranking_size : (i + 1) * ranking_size, j * ranking_size : (j + 1) * ranking_size]
+#            value = torch.sort(temp.resize(x.size()[0], x.size()[1], ranking_size * ranking_size))[0]
+#            temp = value.resize(x.size()[0], x.size()[1], ranking_size, ranking_size)
+#    return x
 
 #%%
 class DehazeBlock(BasicModule):
@@ -93,7 +98,7 @@ class DehazeBlock(BasicModule):
     def forward(self, x):
         x = self.relu(self.bn(self.conv(x)))
         if self.has_ranking:
-            y = ranking_func(x, self.ranking_size)
+            y = RankingFunc.apply(x, self.ranking_size)
 #            y = RankingFunc.apply(x, self.ranking_size)
         if self.has_ranking and self.has_conv:
             return torch.cat((x, y), dim = 1)
@@ -147,19 +152,19 @@ class DehazeNet(BasicModule):
 #            self.net.add_module('DP1', DehazePyramid(6, 8, kernel_size, rate_num, conv, ranking))
 #        else:
 #            self.net.add_module('DP1', DehazePyramid(3, 8, kernel_size, rate_num, conv, ranking))
-        self.net.add_module('DP1', DehazePyramid(3, 8, kernel_size, rate_num, conv, ranking))
-        self.net.add_module('BN1', nn.BatchNorm2d(8))
+        self.net.add_module('DP1', DehazePyramid(3, 4, kernel_size, rate_num, conv, ranking))
+        self.net.add_module('BN1', nn.BatchNorm2d(4))
         self.net.add_module('ReLU1', nn.ReLU(inplace = True))
-        self.net.add_module('DP2', DehazePyramid(8, 8, kernel_size, rate_num, conv, ranking))
-        self.net.add_module('BN2', nn.BatchNorm2d(8))
+        self.net.add_module('DP2', DehazePyramid(4, 4, kernel_size, rate_num, conv, ranking))
+        self.net.add_module('BN2', nn.BatchNorm2d(4))
         self.net.add_module('ReLU2', nn.ReLU(inplace = True))
-        self.net.add_module('DP3', DehazePyramid(8, 8, kernel_size, rate_num, conv, ranking))
-        self.net.add_module('BN3', nn.BatchNorm2d(8))
+        self.net.add_module('DP3', DehazePyramid(4, 4, kernel_size, rate_num, conv, ranking))
+        self.net.add_module('BN3', nn.BatchNorm2d(4))
         self.net.add_module('ReLU3', nn.ReLU(inplace = True))
-        self.net.add_module('DP4', DehazePyramid(8, 8, kernel_size, rate_num, conv, ranking))
-        self.net.add_module('BN4', nn.BatchNorm2d(8))
+        self.net.add_module('DP4', DehazePyramid(4, 4, kernel_size, rate_num, conv, ranking))
+        self.net.add_module('BN4', nn.BatchNorm2d(4))
         self.net.add_module('ReLU4', nn.ReLU(inplace = True))
-        self.net.add_module('DP5', DehazePyramid(8, 3, kernel_size, rate_num, conv, ranking))
+        self.net.add_module('DP5', DehazePyramid(4, 3, kernel_size, rate_num, conv, ranking))
         
     def forward(self, x):
         return self.net(x)
