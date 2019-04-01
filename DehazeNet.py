@@ -32,10 +32,8 @@ class RankingFunc(Function):
     @staticmethod
     def forward(ctx, x, ranking_size): 
         p, c, h, w = x.size()
-        y = torch.empty(x.size()).cuda()
-        y.requires_grad = True
-        ctx.index = torch.arange(0, h*w).view(h, w).unsqueeze(0).repeat(p, c, 1, 1)
-        ctx.ranking_size = ranking_size
+        y = x.clone()
+        ind = torch.arange(0, h*w).view(h, w).unsqueeze(0).repeat(p, c, 1, 1)
         
         h_num = h // ranking_size
         w_num = w // ranking_size
@@ -44,24 +42,33 @@ class RankingFunc(Function):
         for i in range(h_num):
             for j in range(w_num):
                 temp1 = x[:, :, i * ranking_size : (i + 1) * ranking_size, j * ranking_size : (j + 1) * ranking_size].clone()
-                temp2 = ctx.index[:, :, i * ranking_size : (i + 1) * ranking_size, j * ranking_size : (j + 1) * ranking_size].clone()
+                temp2 = ind[:, :, i * ranking_size : (i + 1) * ranking_size, j * ranking_size : (j + 1) * ranking_size].clone()
                 value, index = torch.sort(temp1.view(p, c, ranking_size ** 2))
                 temp1 = value.view(p, c, ranking_size, ranking_size)
                 y[:, :, i * ranking_size : (i + 1) * ranking_size, j * ranking_size : (j + 1) * ranking_size] = temp1
                 temp2 = temp2.view(p, c, ranking_size ** 2).view(-1)
                 index = index.view(-1)
                 temp2 = temp2[index].view(p, c, ranking_size, ranking_size)
-                ctx.index[:, :, i * ranking_size : (i + 1) * ranking_size, j * ranking_size : (j + 1) * ranking_size] = temp2
+                ind[:, :, i * ranking_size : (i + 1) * ranking_size, j * ranking_size : (j + 1) * ranking_size] = temp2
+        ctx.save_for_backward(ind)
         return y
     
     @staticmethod
     def backward(ctx, grad_y):
+        index = ctx.saved_variables[0]
+        grad_x = torch.empty(grad_y.size())
+        print('grad_x', grad_x)
         p, c, h, w = grad_y.size()
-        grad_y = grad_y.view(p, c, -1).contiguous()
-        _, index = ctx.index.view(p, c, -1).sort()
-        grad_y = grad_y.view(-1)[index.view(-1)]
-        grad_y = grad_y.view(p, c, h, w)
-        return grad_y, None
+        for i in range(p):
+            for j in range(c):
+                temp = grad_y[i, j, :, :].view(-1)
+                print(temp)
+                _, temp_index = index[i, j, :, :].view(-1).sort()
+                print(temp_index)
+                grad_x[i, j, :, :] = temp[temp_index].view(h,w)
+                print(index[i, j, :, :])
+                
+        return grad_x, None
     
 #def ranking_func(x, ranking_size):      
 #    h_num = x.size()[2] // ranking_size

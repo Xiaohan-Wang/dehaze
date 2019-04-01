@@ -4,7 +4,6 @@
 import os
 os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 
-import time
 from DehazeNet import DehazeNet
 from torch.utils.data import DataLoader
 import torch.nn as nn
@@ -71,8 +70,8 @@ def train(opt):
             
 #            if (iteration + 1) % opt.display_iter == 0:
 #                print("Loss at iteration {}: {}".format(iteration, loss))
-#            if (iteration + 1) == len(train_dataloader):
-#                torchvision.utils.save_image(torch.cat((input_data.data, target_data.data, output_result.data), dim = 0),
+#            if (iteration + 1) % opt.sample_iter == 0:
+#                torchvision.utils.save_image(torch.cat((input_data / 2 + 0.5, target_data / 2 + 0.5, output_result / 2 + 0.5), dim = 0),
 #                                             'output_sample/epoch{}.jpg'.format(epoch))
         
         if (epoch + 1) % opt.display_iter == 0:
