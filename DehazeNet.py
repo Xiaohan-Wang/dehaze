@@ -57,16 +57,12 @@ class RankingFunc(Function):
     def backward(ctx, grad_y):
         index = ctx.saved_variables[0]
         grad_x = torch.empty(grad_y.size())
-        print('grad_x', grad_x)
         p, c, h, w = grad_y.size()
         for i in range(p):
             for j in range(c):
                 temp = grad_y[i, j, :, :].view(-1)
-                print(temp)
                 _, temp_index = index[i, j, :, :].view(-1).sort()
-                print(temp_index)
                 grad_x[i, j, :, :] = temp[temp_index].view(h,w)
-                print(index[i, j, :, :])
                 
         return grad_x, None
     
@@ -125,9 +121,10 @@ class DehazePyramid(BasicModule):
         ranking: ranking path
         """
         super().__init__()
+        self.dilation = [1, 2, 5, 11, 23]
         self.db = nn.ModuleList()
         for i in range(num):
-            self.db.append(DehazeBlock(in_channel, out_channel, kernel_size, dilation = 2**i, 
+            self.db.append(DehazeBlock(in_channel, out_channel, kernel_size, dilation = self.dilation[i], 
                                        conv = conv, ranking = ranking))
         if conv and ranking:
             self.conv = nn.Conv2d(out_channel * num * 2, out_channel, (1, 1), 1, bias = True)
@@ -145,7 +142,7 @@ class DehazePyramid(BasicModule):
 
 #%%
 class DehazeNet(BasicModule):
-    def __init__(self, kernel_size, rate_num, conv = True, ranking = False):
+    def __init__(self, kernel_size, rate_num, pyramid_num, conv = True, ranking = False):
         """
         INPUT PEREMETERS
         -------------------------------------------------
@@ -155,23 +152,18 @@ class DehazeNet(BasicModule):
         """
         super().__init__()
         self.net = nn.Sequential()
-#        if conv and ranking:
-#            self.net.add_module('DP1', DehazePyramid(6, 8, kernel_size, rate_num, conv, ranking))
-#        else:
-#            self.net.add_module('DP1', DehazePyramid(3, 8, kernel_size, rate_num, conv, ranking))
-        self.net.add_module('DP1', DehazePyramid(3, 4, kernel_size, rate_num, conv, ranking))
-        self.net.add_module('BN1', nn.BatchNorm2d(4))
-        self.net.add_module('ReLU1', nn.ReLU(inplace = True))
-        self.net.add_module('DP2', DehazePyramid(4, 4, kernel_size, rate_num, conv, ranking))
-        self.net.add_module('BN2', nn.BatchNorm2d(4))
-        self.net.add_module('ReLU2', nn.ReLU(inplace = True))
-        self.net.add_module('DP3', DehazePyramid(4, 4, kernel_size, rate_num, conv, ranking))
-        self.net.add_module('BN3', nn.BatchNorm2d(4))
-        self.net.add_module('ReLU3', nn.ReLU(inplace = True))
-        self.net.add_module('DP4', DehazePyramid(4, 4, kernel_size, rate_num, conv, ranking))
-        self.net.add_module('BN4', nn.BatchNorm2d(4))
-        self.net.add_module('ReLU4', nn.ReLU(inplace = True))
-        self.net.add_module('DP5', DehazePyramid(4, 3, kernel_size, rate_num, conv, ranking))
+        if conv and ranking:
+            self.net.add_module('DP1', DehazePyramid(6, 8, kernel_size, rate_num, conv, ranking))
+        else:
+            self.net.add_module('DP1', DehazePyramid(3, 8, kernel_size, rate_num, conv, ranking))
+        for i in range(pyramid_num):          
+            self.net.add_module('BN' + str(i + 1), nn.BatchNorm2d(8))
+            self.net.add_module('ReLU' + str(i + 1), nn.ReLU(inplace = True))
+            if i == pyramid_num - 1:
+                self.net.add_module('DP' + str(i + 2), DehazePyramid(8, 3, kernel_size, rate_num, conv, ranking))
+            else:
+                self.net.add_module('DP' + str(i + 2), DehazePyramid(8, 8, kernel_size, rate_num, conv, ranking))
+
         
     def forward(self, x):
         return self.net(x)

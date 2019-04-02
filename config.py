@@ -8,6 +8,7 @@ class Config(object):
     
     kernel_size = 3
     rate_num = 5
+    pyramid_num = 5
     conv = True
     ranking = True
     

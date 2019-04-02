@@ -13,11 +13,12 @@ import torch
 from config import Config
 from DehazingSet import DehazingSet
 from torchvision import transforms as T
+import time
 
 #%%
 def train(opt):
     #step1: model
-    model = DehazeNet(opt.kernel_size, opt.rate_num, opt.conv, opt.ranking)
+    model = DehazeNet(opt.kernel_size, opt.rate_num, opt.paramid_num, opt.conv, opt.ranking)
     if torch.cuda.is_available():
         model = model.cuda()
     if opt.load_model_path:
@@ -68,30 +69,22 @@ def train(opt):
             
             total_loss += loss.detach()
             
-#            if (iteration + 1) % opt.display_iter == 0:
-#                print("Loss at iteration {}: {}".format(iteration, loss))
-#            if (iteration + 1) % opt.sample_iter == 0:
-#                torchvision.utils.save_image(torch.cat((input_data / 2 + 0.5, target_data / 2 + 0.5, output_result / 2 + 0.5), dim = 0),
-#                                             'output_sample/epoch{}.jpg'.format(epoch))
-        
-        if (epoch + 1) % opt.display_iter == 0:
-            print("Loss at epoch {}: {}".format(epoch + 1, loss))
-        if (epoch + 1) % opt.sample_iter == 0:
-            torchvision.utils.save_image(torch.cat((input_data / 2 + 0.5, target_data / 2 + 0.5, output_result / 2 + 0.5), dim = 0),
-                                         'output_sample/epoch{}.jpg'.format(epoch + 1))
-            val_loss = val(model, val_dataloader)
-            print("Val Set Loss at epoch {}: {}".format(epoch + 1, val_loss))
-        #print("Training Set Loss at Epoch {}: {}".format(epoch, total_loss))
-        #model.save(time.strftime('%m%d_%H:%M:%S') + '_Epoch:' + str(epoch) + '.pth')
-        
-        
+            if (iteration + 1) % opt.display_iter == 0:
+                print("Loss at epoch {} iteration {}: {}".format(epoch + 1, iteration + 1, loss))
+                val_loss = val(model, val_dataloader)
+                print("Val Set Loss at epoch {} iteration {}: {}".format(epoch + 1, iteration + 1, val_loss))
+            if (iteration + 1) % opt.sample_iter == 0:
+                torchvision.utils.save_image(torch.cat((input_data / 2 + 0.5, target_data / 2 + 0.5, output_result / 2 + 0.5), dim = 0),
+                                             'output_sample/epoch{}_iter{}.jpg'.format(epoch, iteration))
 
+#        print("Training Set Loss at Epoch {}: {}".format(epoch, total_loss))
+        model.save(time.strftime('%m%d_%H:%M:%S') + '_Epoch' + str(epoch + 1) + '.pth')
         
-#        #if loss does not decrease, decrease learning rate
-#        if loss_meter.value()[0] > previous_loss:
-#            lr = lr * opt.lr_decay
-#            for param_group in optimizer.param_groups:
-#                param_group['lr'] = lr
+        #if loss does not decrease, decrease learning rate
+        if total_loss > previous_loss:
+            lr = lr * opt.lr_decay
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = lr
                 
 #%%       
 def val(model, dataloader):
@@ -107,7 +100,6 @@ def val(model, dataloader):
         
         output_result = model(input_data)
         
-        #TODO: SSIM and PSNR test
         loss = nn.MSELoss()(output_result, target_data)
         loss_total += loss.detach()
     
