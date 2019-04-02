@@ -1,4 +1,5 @@
 class Config(object):
+    debug_file = True
     
     train_data_root = 'dataset/training_set'
     val_data_root = 'dataset/val_set'
@@ -8,11 +9,11 @@ class Config(object):
     
     kernel_size = 3
     rate_num = 5
-    pyramid_num = 5
+    pyramid_num = 4
     conv = True
-    ranking = True
+    ranking = False
     
-    img_size = 32
+    img_size = 2
     batch_size = 4
     val_batch_size = 1
     num_workers = 4
