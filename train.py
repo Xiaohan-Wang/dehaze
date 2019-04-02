@@ -43,16 +43,16 @@ def train(opt, vis):
     
     # metrics
     total_loss = 0
-    previous_loss = 1e100
+    previous_loss = 1
     
     model.train()  #train mode
-    
+    step = 69  #counter
+    globle_step = 0   
     
     #step5: train
-    for epoch in range(opt.max_epoch):
+    for epoch in range(1, opt.max_epoch):
         total_loss = 0
-        step = 0  #counter
-        globle_step = 0
+
         for iteration, (hazy_img, gt_img) in enumerate(train_dataloader):
 
             input_data = hazy_img
@@ -75,20 +75,23 @@ def train(opt, vis):
                 print("Loss at epoch {} iteration {}: {}".format(epoch + 1, iteration + 1, loss))
                 vis.line(X = torch.tensor([step]), Y = torch.tensor([loss]), win = 'train loss', update = 'append' if step > 0 else None)
             if (iteration + 1) % opt.sample_iter == 0:
-                torchvision.utils.save_image(torch.cat((input_data / 2 + 0.5, target_data / 2 + 0.5, output_result / 2 + 0.5), dim = 0),
-                                             'output_sample/epoch{}_iter{}.jpg'.format(epoch, iteration))            
+                torchvision.utils.save_image(torch.cat((input_data / 2 + 0.5, target_data / 2 + 0.5, output_result / 2 + 0.5), dim = 0), \
+                                             'output_sample/epoch{}_iter{}.jpg'.format(epoch + 1, iteration + 1), nrow = 4)
+                step += 1
             if os.path.exists(opt.debug_file):
                 import ipdb
                 ipdb.set_trace()
                 
-            step += 1
+            
 
 #        print("Training Set Loss at Epoch {}: {}".format(epoch, total_loss))
         model.save(time.strftime('%m%d_%H:%M:%S') + '_Epoch' + str(epoch + 1) + '.pth')
         
         val_loss = val(model, val_dataloader)
         print("Val Set Loss at epoch {} iteration {}: {}".format(epoch + 1, iteration + 1, val_loss))
-        vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([val_loss]), win = 'val loss', update = 'append' if globle_step > 0 else None)
+        vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([total_loss]), win = 'val and train loss', update = 'append' if globle_step > 0 else None, name = 'train loss')
+        vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([val_loss]), win = 'val and train loss', update = 'append' if globle_step > 0 else None, name = 'Val loss')
+        globle_step += 1
         
         #if loss does not decrease, decrease learning rate
         if total_loss > previous_loss:

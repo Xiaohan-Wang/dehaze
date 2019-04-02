@@ -4,16 +4,16 @@ from torch.utils import data
 
 class DehazingSet(data.Dataset):
     def __init__(self, root, transform):
-        gt_imgs = os.listdir(root + '/gt')
+        self.gt_imgs_path = root + '/clear/'
         hazy_imgs = os.listdir(root + '/hazy')
-        self.gt_imgs = [root + '/gt/' + img for img in gt_imgs]
         self.hazy_imgs = [root + '/hazy/' + img for img in hazy_imgs]
+        self.hazy_imgs.sort()
         self.transform = transform
 
     
     def __getitem__(self, index):
-        gt_path = self.gt_imgs[index]
         hazy_path = self.hazy_imgs[index]
+        gt_path = self.gt_imgs_path + hazy_path.split('_')[0].split('/')[-1] + '.png' 
         gt_img = Image.open(gt_path).convert('RGB')
         hazy_img = Image.open(hazy_path).convert('RGB')
         if self.transform:
@@ -22,4 +22,4 @@ class DehazingSet(data.Dataset):
         return hazy_img, gt_img
     
     def __len__(self):
-        return len(self.gt_imgs)
+        return len(self.hazy_imgs)
