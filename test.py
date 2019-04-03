@@ -2,14 +2,15 @@ from DehazeNet import DehazeNet
 from torch.utils.data import DataLoader
 from torch.autograd import Variable
 from torchnet import meter
+import DehazingSet
 import Config
 
 def test(opt):
-    model = DehazeNet(opt.kernel_size, opt.rate_num,opt.conv, opt.ranking)
+    model = DehazeNet(opt.kernel_size, opt.rate_num, opt.pyramid_num, opt.conv, opt.ranking)
     model.load(opt.load_model_path)
     
     test_set = DehazingSet(opt.test_data_root)
-    dataloader = DataLoader(test_set,opt.batch_size, shuffle = True, num_workers = opt.num_workers)
+    dataloader = DataLoader(test_set, opt.val_batch_size, shuffle = True, num_workers = opt.num_workers)
     
     loss_meter = meter.AverageValueMeter()
     

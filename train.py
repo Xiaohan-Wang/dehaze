@@ -15,6 +15,7 @@ from DehazingSet import DehazingSet
 from torchvision import transforms as T
 import time
 import visdom
+from utils import save_load as sl
 
 #%%
 def train(opt, vis):
@@ -26,13 +27,8 @@ def train(opt, vis):
         model.load(opt.load_model_path)
     
     #step2: dataset
-    transform = T.Compose([
-                    T.CenterCrop(opt.img_size),
-                    T.ToTensor(),
-                    T.Normalize(mean = [.5, .5, .5], std = [.5, .5, .5])
-                ])
-    train_set = DehazingSet(opt.train_data_root, transform)
-    val_set = DehazingSet(opt.val_data_root, transform)
+    train_set = DehazingSet(opt.train_data_root, opt.transform)
+    val_set = DehazingSet(opt.val_data_root, opt.transform)
     train_dataloader = DataLoader(train_set, opt.batch_size, shuffle = True, num_workers = opt.num_workers)
     val_dataloader = DataLoader(val_set, opt.val_batch_size, shuffle = True, num_workers = opt.num_workers)
     
@@ -46,7 +42,7 @@ def train(opt, vis):
     previous_loss = 1
     
     model.train()  #train mode
-    step = 69  #counter
+    step = 0  #counter
     globle_step = 0   
     
     #step5: train
@@ -85,7 +81,7 @@ def train(opt, vis):
             
 
 #        print("Training Set Loss at Epoch {}: {}".format(epoch, total_loss))
-        model.save(time.strftime('%m%d_%H:%M:%S') + '_Epoch' + str(epoch + 1) + '.pth')
+        sl.save_state(model.state_dict(), optimizer.state_dict(), epoch, iteration)
         
         val_loss = val(model, val_dataloader)
         print("Val Set Loss at epoch {} iteration {}: {}".format(epoch + 1, iteration + 1, val_loss))

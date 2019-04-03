@@ -1,3 +1,5 @@
+from torchvision import transforms as T
+
 class Config(object):
     debug_file = 'debug_file'
     
@@ -25,4 +27,10 @@ class Config(object):
     sample_iter = 50
     
     lr_decay = 0.95
+    
+    transform = T.Compose([
+                T.CenterCrop(img_size),
+                T.ToTensor(),
+                T.Normalize(mean = [.5, .5, .5], std = [.5, .5, .5])
+            ])
      
