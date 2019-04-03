@@ -23,8 +23,6 @@ def train(opt, vis):
     model = DehazeNet(opt.kernel_size, opt.rate_num, opt.pyramid_num, opt.conv, opt.ranking)
     if torch.cuda.is_available():
         model = model.cuda()
-    if opt.load_model_path:
-        model.load(opt.load_model_path)
     
     #step2: dataset
     train_set = DehazingSet(opt.train_data_root, opt.transform)
@@ -37,16 +35,20 @@ def train(opt, vis):
     lr = opt.lr #current learning rate
     optimizer = optim.Adam(model.parameters(), lr = lr, weight_decay = opt.weight_decay)
     
+    model.load(opt.load_model_path)
+#    if opt.load_model_path:
+#        model, _, _, _ = sl.load_state(opt.load_model_path, model)
+        
     # metrics
     total_loss = 0
     previous_loss = 1
     
     model.train()  #train mode
-    step = 0  #counter
-    globle_step = 0   
+    step = 1542  #counter
+    globle_step = 22   
     
     #step5: train
-    for epoch in range(1, opt.max_epoch):
+    for epoch in range(23, opt.max_epoch):
         total_loss = 0
 
         for iteration, (hazy_img, gt_img) in enumerate(train_dataloader):
@@ -81,7 +83,7 @@ def train(opt, vis):
             
 
 #        print("Training Set Loss at Epoch {}: {}".format(epoch, total_loss))
-        sl.save_state(model.state_dict(), optimizer.state_dict(), epoch, iteration)
+        sl.save_state(epoch, iteration, model.state_dict(), optimizer.state_dict())
         
         val_loss = val(model, val_dataloader)
         print("Val Set Loss at epoch {} iteration {}: {}".format(epoch + 1, iteration + 1, val_loss))
