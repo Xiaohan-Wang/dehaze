@@ -34,6 +34,8 @@ class RankingFunc(Function):
         p, c, h, w = x.size()
         y = x.clone()
         ind = torch.arange(0, h*w).view(h, w).unsqueeze(0).repeat(p, c, 1, 1)
+        if torch.cuda.is_available():
+            ind = ind.cuda()
         
         h_num = h // ranking_size
         w_num = w // ranking_size
@@ -57,6 +59,8 @@ class RankingFunc(Function):
     def backward(ctx, grad_y):
         index = ctx.saved_variables[0]
         grad_x = torch.empty(grad_y.size())
+        if torch.cuda.is_available():
+            grad_x = grad_x.cuda()
         p, c, h, w = grad_y.size()
         for i in range(p):
             for j in range(c):

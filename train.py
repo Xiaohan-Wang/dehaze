@@ -35,20 +35,18 @@ def train(opt, vis):
     lr = opt.lr #current learning rate
     optimizer = optim.Adam(model.parameters(), lr = lr, weight_decay = opt.weight_decay)
     
-    model.load(opt.load_model_path)
-#    if opt.load_model_path:
-#        model, _, _, _ = sl.load_state(opt.load_model_path, model)
+    if opt.load_model_path:
+        model, optimizer, epoch_s, step_s = sl.load_state(opt.load_model_path, model, optimizer)
         
     # metrics
     total_loss = 0
     previous_loss = 1
     
     model.train()  #train mode
-    step = 1542  #counter
-    globle_step = 22   
+    (globle_step, step) = (epoch_s + 1, step_s) if opt.load_model_path != None else (0, 0)   
     
     #step5: train
-    for epoch in range(23, opt.max_epoch):
+    for epoch in range(globle_step, opt.max_epoch):
         total_loss = 0
 
         for iteration, (hazy_img, gt_img) in enumerate(train_dataloader):
@@ -69,13 +67,14 @@ def train(opt, vis):
             
             total_loss += loss.detach()
             
-            if (iteration + 1) % opt.display_iter == 0:
-                print("Loss at epoch {} iteration {}: {}".format(epoch + 1, iteration + 1, loss))
+            step += 1
+            
+            if step % opt.display_iter == 0:
+                print("Loss at epoch {} step {}: {}".format(epoch + 1, step, loss))
                 vis.line(X = torch.tensor([step]), Y = torch.tensor([loss]), win = 'train loss', update = 'append' if step > 0 else None)
-            if (iteration + 1) % opt.sample_iter == 0:
+            if step % opt.sample_iter == 0:
                 torchvision.utils.save_image(torch.cat((input_data / 2 + 0.5, target_data / 2 + 0.5, output_result / 2 + 0.5), dim = 0), \
-                                             'output_sample/epoch{}_iter{}.jpg'.format(epoch + 1, iteration + 1), nrow = 4)
-                step += 1
+                                             'output_sample/epoch{}_step{}.jpg'.format(epoch + 1, step), nrow = 4)
             if os.path.exists(opt.debug_file):
                 import ipdb
                 ipdb.set_trace()
@@ -83,10 +82,10 @@ def train(opt, vis):
             
 
 #        print("Training Set Loss at Epoch {}: {}".format(epoch, total_loss))
-        sl.save_state(epoch, iteration, model.state_dict(), optimizer.state_dict())
+        sl.save_state(epoch, step, model.state_dict(), optimizer.state_dict())
         
         val_loss = val(model, val_dataloader)
-        print("Val Set Loss at epoch {} iteration {}: {}".format(epoch + 1, iteration + 1, val_loss))
+        print("Val Set Loss at epoch {} : {}".format(epoch + 1, val_loss))
         vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([total_loss]), win = 'val and train loss', update = 'append' if globle_step > 0 else None, name = 'train loss')
         vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([val_loss]), win = 'val and train loss', update = 'append' if globle_step > 0 else None, name = 'Val loss')
         globle_step += 1
