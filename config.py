@@ -12,8 +12,8 @@ class Config(object):
     kernel_size = 3
     rate_num = 5
     pyramid_num = 4
-    conv = False
-    ranking = True
+    conv = True
+    ranking = False
     
     img_size = 128
     batch_size = 2

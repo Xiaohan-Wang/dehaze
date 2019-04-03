@@ -139,7 +139,7 @@ class DehazePyramid(BasicModule):
     def forward(self, x):
         y = []
         for i in range(self.num):
-            y.append(self.db[i](x))
+            y.append(self.db[i](x) + y[i-1] if i != 0 else self.db[i](x))
         y = torch.cat(y, dim = 1)
         y = self.conv(y)
         return y
