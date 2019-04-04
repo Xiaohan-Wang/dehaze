@@ -77,28 +77,29 @@ def train(opt, vis):
             if os.path.exists(opt.debug_file):
                 import ipdb
                 ipdb.set_trace()
-                
-            
-
-#        print("Training Set Loss at Epoch {}: {}".format(epoch, total_loss))
+        
+        training_loss = total_loss / (len(train_set) // opt.batch_size)
+#        print("Training Set Loss at Epoch {}: {}".format(epoch, training_loss))
         sl.save_state(epoch, step, model.state_dict(), optimizer.state_dict())
         
 #        val_loss = val(model, val_dataloader)
 #        print("Val Set Loss at epoch {} : {}".format(epoch + 1, val_loss))
-        vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([total_loss]), win = 'val and train loss', update = 'append' if globle_step > 0 else None, name = 'train loss')
+        vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([training_loss]), win = 'val and train loss', update = 'append' if globle_step > 0 else None, name = 'train loss')
 #        vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([val_loss]), win = 'val and train loss', update = 'append' if globle_step > 0 else None, name = 'Val loss')
         globle_step += 1
         
         #if loss does not decrease, decrease learning rate
-        if total_loss > previous_loss:
+        if training_loss >= previous_loss:
             for param_group in optimizer.param_groups:
                 param_group['lr'] = param_group['lr'] * opt.lr_decay
+        previous_loss = training_loss
                 
 #%%       
 def val(model, dataloader):
     model.eval() #evaluation mode
     
     loss_total = 0
+    img_num = 0
     for iteration, (hazy_img, gt_img) in enumerate(dataloader):
         input_data = hazy_img
         target_data = gt_img
@@ -110,10 +111,12 @@ def val(model, dataloader):
         
         loss = nn.MSELoss()(output_result, target_data)
         loss_total += loss.detach()
+        img_num += 1
     
+    loss_avg = loss_total / img_num
     model.train() #back to train mode
     
-    return loss_total
+    return loss_avg
 
 
 #%%
