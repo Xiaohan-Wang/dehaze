@@ -73,7 +73,7 @@ def train(opt, vis):
                 vis.line(X = torch.tensor([step]), Y = torch.tensor([loss]), win = 'train loss', update = 'append' if step > 0 else None)
             if step % opt.sample_iter == 0:
                 torchvision.utils.save_image(torch.cat((input_data / 2 + 0.5, target_data / 2 + 0.5, output_result / 2 + 0.5), dim = 0), \
-                                             'output_sample/epoch{}_step{}.jpg'.format(epoch + 1, step), nrow = 4)
+                                             opt.output_sample + '/epoch{}_step{}.jpg'.format(epoch + 1, step), nrow = 4)
             if os.path.exists(opt.debug_file):
                 import ipdb
                 ipdb.set_trace()
@@ -83,10 +83,10 @@ def train(opt, vis):
 #        print("Training Set Loss at Epoch {}: {}".format(epoch, total_loss))
         sl.save_state(epoch, step, model.state_dict(), optimizer.state_dict())
         
-#        val_loss = val(model, val_dataloader)
+        val_loss = val(model, val_dataloader)
 #        print("Val Set Loss at epoch {} : {}".format(epoch + 1, val_loss))
         vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([total_loss]), win = 'val and train loss', update = 'append' if globle_step > 0 else None, name = 'train loss')
-#        vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([val_loss]), win = 'val and train loss', update = 'append' if globle_step > 0 else None, name = 'Val loss')
+        vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([val_loss]), win = 'val and train loss', update = 'append' if globle_step > 0 else None, name = 'Val loss')
         globle_step += 1
         
         #if loss does not decrease, decrease learning rate

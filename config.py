@@ -7,7 +7,7 @@ class Config(object):
     val_data_root = '/home/ws/datasets/SOTS(Testing Set)/(indoor)nyuhaze500'
     test_data_root = 'dataset/test_set'
     output_sample = 'output_sample'
-    load_model_path = 'checkpoints/0404_15:52:50_epoch5_step17490.pth'
+    load_model_path = 'checkpoints/0404_23:57:04_epoch13_step45474.pth'
     
     kernel_size = 3
     rate_num = 5
@@ -15,7 +15,7 @@ class Config(object):
     conv = True
     ranking = False
     
-#    img_size = 512
+    img_size = (460, 620)
     batch_size = 4
     val_batch_size = 1
     num_workers = 1
@@ -29,7 +29,7 @@ class Config(object):
     lr_decay = 0.95
     
     transform = T.Compose([
-#                T.CenterCrop((620, 460)),
+                T.CenterCrop(img_size),
                 T.ToTensor(),
                 T.Normalize(mean = [.5, .5, .5], std = [.5, .5, .5])
             ])
