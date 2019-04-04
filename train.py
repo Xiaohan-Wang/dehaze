@@ -32,8 +32,7 @@ def train(opt, vis):
     
     #step3: Loss function and Optimizer
     criterion = nn.MSELoss().cuda()
-    lr = opt.lr #current learning rate
-    optimizer = optim.Adam(model.parameters(), lr = lr, weight_decay = opt.weight_decay)
+    optimizer = optim.Adam(model.parameters(), lr = opt.lr, weight_decay = opt.weight_decay)
     
     if opt.load_model_path:
         model, optimizer, epoch_s, step_s = sl.load_state(opt.load_model_path, model, optimizer)
@@ -84,17 +83,16 @@ def train(opt, vis):
 #        print("Training Set Loss at Epoch {}: {}".format(epoch, total_loss))
         sl.save_state(epoch, step, model.state_dict(), optimizer.state_dict())
         
-        val_loss = val(model, val_dataloader)
-        print("Val Set Loss at epoch {} : {}".format(epoch + 1, val_loss))
+#        val_loss = val(model, val_dataloader)
+#        print("Val Set Loss at epoch {} : {}".format(epoch + 1, val_loss))
         vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([total_loss]), win = 'val and train loss', update = 'append' if globle_step > 0 else None, name = 'train loss')
-        vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([val_loss]), win = 'val and train loss', update = 'append' if globle_step > 0 else None, name = 'Val loss')
+#        vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([val_loss]), win = 'val and train loss', update = 'append' if globle_step > 0 else None, name = 'Val loss')
         globle_step += 1
         
         #if loss does not decrease, decrease learning rate
         if total_loss > previous_loss:
-            lr = lr * opt.lr_decay
             for param_group in optimizer.param_groups:
-                param_group['lr'] = lr
+                param_group['lr'] = param_group['lr'] * opt.lr_decay
                 
 #%%       
 def val(model, dataloader):
