@@ -5,3 +5,4 @@ __pycache__/
 *.html
 checkpoints/
 output_sample/
+dataset/

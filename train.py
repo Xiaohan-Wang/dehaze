@@ -6,6 +6,7 @@ os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 
 from DehazeNet import DehazeNet
 from torch.utils.data import DataLoader
+from torch.utils.data.sampler import SubsetRandomSampler
 import torch.nn as nn
 from torch import optim
 import torchvision.utils
@@ -20,15 +21,17 @@ from utils import save_load as sl
 #%%
 def train(opt, vis):
     #step1: model
-    model = DehazeNet(opt.kernel_size, opt.rate_num, opt.pyramid_num, opt.conv, opt.ranking)
+    model = DehazeNet(opt.kernel_size, opt.rate_num, opt.pyramid_num, opt.conv, opt.ranking, opt.dilation)
     if torch.cuda.is_available():
         model = model.cuda()
     
     #step2: dataset
     train_set = DehazingSet(opt.train_data_root, opt.transform)
     val_set = DehazingSet(opt.val_data_root, opt.transform)
-    train_dataloader = DataLoader(train_set, opt.batch_size, shuffle = True, num_workers = opt.num_workers)
-    val_dataloader = DataLoader(val_set, opt.val_batch_size, shuffle = True, num_workers = opt.num_workers)
+    sampler_train = SubsetRandomSampler(torch.arange(opt.train_num))
+    sampler_val = SubsetRandomSampler(torch.arange(opt.val_num))
+    train_dataloader = DataLoader(train_set, sampler = sampler_train, batch_size = opt.batch_size, shuffle = True, num_workers = opt.num_workers)
+    val_dataloader = DataLoader(val_set, sampler = sampler_val, batch_size = opt.val_batch_size, shuffle = True, num_workers = opt.num_workers)
     
     #step3: Loss function and Optimizer
     criterion = nn.MSELoss().cuda()

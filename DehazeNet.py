@@ -116,7 +116,7 @@ class DehazeBlock(BasicModule):
             
 #%%
 class DehazePyramid(BasicModule):
-    def __init__(self, in_channel, out_channel, kernel_size, num, conv = True, ranking = False):
+    def __init__(self, in_channel, out_channel, kernel_size, num, conv = True, ranking = False, dilation = False):
         """
         INPUT PARAMETERS
         ----------------------------------------------
@@ -125,7 +125,10 @@ class DehazePyramid(BasicModule):
         ranking: ranking path
         """
         super().__init__()
-        self.dilation = [1, 2, 5, 11, 23]
+        if dilation:
+            self.dilation = [1, 2, 5, 11, 23]
+        else:
+            self.dilation = [1, 1, 1, 1, 1]
         self.db = nn.ModuleList()
         for i in range(num):
             self.db.append(DehazeBlock(in_channel, out_channel, kernel_size, dilation = self.dilation[i], 
@@ -146,7 +149,7 @@ class DehazePyramid(BasicModule):
 
 #%%
 class DehazeNet(BasicModule):
-    def __init__(self, kernel_size, rate_num, pyramid_num, conv = True, ranking = False):
+    def __init__(self, kernel_size, rate_num, pyramid_num, conv = True, ranking = False, dilation = False):
         """
         INPUT PEREMETERS
         -------------------------------------------------
@@ -157,16 +160,16 @@ class DehazeNet(BasicModule):
         super().__init__()
         self.net = nn.Sequential()
         if conv and ranking:
-            self.net.add_module('DP1', DehazePyramid(6, 8, kernel_size, rate_num, conv, ranking))
+            self.net.add_module('DP1', DehazePyramid(6, 8, kernel_size, rate_num, conv, ranking, dilation))
         else:
-            self.net.add_module('DP1', DehazePyramid(3, 8, kernel_size, rate_num, conv, ranking))
-        for i in range(pyramid_num):          
-            self.net.add_module('BN' + str(i + 1), nn.BatchNorm2d(8))
-            self.net.add_module('ReLU' + str(i + 1), nn.ReLU(inplace = True))
+            self.net.add_module('DP1', DehazePyramid(3, 8, kernel_size, rate_num, conv, ranking, dilation))
+        for i in range(2, pyramid_num + 1):          
+            self.net.add_module('BN' + str(i - 1), nn.BatchNorm2d(8))
+            self.net.add_module('ReLU' + str(i - 1), nn.ReLU(inplace = True))
             if i == pyramid_num - 1:
-                self.net.add_module('DP' + str(i + 2), DehazePyramid(8, 3, kernel_size, rate_num, conv, ranking))
+                self.net.add_module('DP' + str(i), DehazePyramid(8, 3, kernel_size, rate_num, conv, ranking, dilation))
             else:
-                self.net.add_module('DP' + str(i + 2), DehazePyramid(8, 8, kernel_size, rate_num, conv, ranking))
+                self.net.add_module('DP' + str(i), DehazePyramid(8, 8, kernel_size, rate_num, conv, ranking, dilation))
 
         
     def forward(self, x):

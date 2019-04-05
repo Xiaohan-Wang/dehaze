@@ -9,11 +9,15 @@ class Config(object):
     output_sample = 'output_sample0405'
     load_model_path = None
     
+    train_num = 2000
+    val_num = 100
+    
     kernel_size = 3
-    rate_num = 4
-    pyramid_num = 3
+    rate_num = 1
+    pyramid_num = 4
     conv = True
     ranking = False
+    dilation = False
     
     ori_img_size = (460, 620)
     resized_img_size = (460/4, 620/4)
