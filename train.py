@@ -36,7 +36,9 @@ def train(opt, vis):
     
     if opt.load_model_path:
         model, optimizer, epoch_s, step_s = sl.load_state(opt.load_model_path, model, optimizer)
-        
+    
+    if not os.path.exists(opt.output_sample):
+        os.mkdir(opt.ouput_sample)
     # metrics
     total_loss = 0
     previous_loss = 1

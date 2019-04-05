@@ -4,6 +4,7 @@ from torch.autograd import Variable
 from torchnet import meter
 import DehazingSet
 import Config
+from torch import nn
 
 def test(opt):
     model = DehazeNet(opt.kernel_size, opt.rate_num, opt.pyramid_num, opt.conv, opt.ranking)
