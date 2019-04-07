@@ -2,7 +2,7 @@
 #-*-coding:utf-8-*-
 
 import os
-os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+#os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
 
 from DehazeNet import DehazeNet
 from torch.utils.data import DataLoader
@@ -13,8 +13,6 @@ import torchvision.utils
 import torch
 from config import Config
 from DehazingSet import DehazingSet
-from torchvision import transforms as T
-import time
 import visdom
 from utils import save_load as sl
 
@@ -24,14 +22,14 @@ def train(opt, vis):
     model = DehazeNet(opt.kernel_size, opt.rate_num, opt.pyramid_num, opt.conv, opt.ranking, opt.dilation)
     if torch.cuda.is_available():
         model = model.cuda()
-    
+
     #step2: dataset
-    train_set = DehazingSet(opt.train_data_root, opt.transform)
-    val_set = DehazingSet(opt.val_data_root, opt.transform)
-    sampler_train = SubsetRandomSampler(torch.arange(opt.train_num))
-    sampler_val = SubsetRandomSampler(torch.arange(opt.val_num))
-    train_dataloader = DataLoader(train_set, sampler = sampler_train, batch_size = opt.batch_size, shuffle = True, num_workers = opt.num_workers)
-    val_dataloader = DataLoader(val_set, sampler = sampler_val, batch_size = opt.val_batch_size, shuffle = True, num_workers = opt.num_workers)
+    train_val_set = DehazingSet(opt.train_data_root, opt.transform)
+#    val_set = DehazingSet(opt.val_data_root, opt.transform)
+    sampler_train = SubsetRandomSampler(torch.randperm(opt.train_num))
+    sampler_val = SubsetRandomSampler(torch.randperm(opt.val_num) + opt.train_num)
+    train_dataloader = DataLoader(train_val_set, sampler = sampler_train, batch_size = opt.batch_size, num_workers = opt.num_workers, drop_last = True)
+    val_dataloader = DataLoader(train_val_set, sampler = sampler_val, batch_size = opt.val_batch_size, num_workers = opt.num_workers)
     
     #step3: Loss function and Optimizer
     criterion = nn.MSELoss().cuda()
@@ -67,6 +65,8 @@ def train(opt, vis):
             
             optimizer.zero_grad()
             loss.backward()
+#            nn.utils.clip_grad_norm(model.parameters(), opt.grad_clip_norm)
+            
             optimizer.step()
             
             total_loss += loss.detach()
@@ -77,13 +77,13 @@ def train(opt, vis):
                 print("Loss at epoch {} step {}: {}".format(epoch + 1, step, loss))
                 vis.line(X = torch.tensor([step]), Y = torch.tensor([loss]), win = 'train loss', update = 'append' if step > 0 else None)
             if step % opt.sample_iter == 0:
-                torchvision.utils.save_image(torch.cat((input_data / 2 + 0.5, target_data / 2 + 0.5, output_result / 2 + 0.5), dim = 0), \
-                                             opt.output_sample + '/epoch{}_step{}.jpg'.format(epoch + 1, step), nrow = 4)
+                torchvision.utils.save_image(torch.cat((input_data, target_data, output_result), dim = 0), \
+                                             opt.output_sample + '/epoch{}_step{}.jpg'.format(epoch + 1, step), nrow = 8)
             if os.path.exists(opt.debug_file):
                 import ipdb
                 ipdb.set_trace()
         
-        training_loss = total_loss / (len(train_set) // opt.batch_size)
+        training_loss = total_loss / (opt.train_num // opt.batch_size)
 #        print("Training Set Loss at Epoch {}: {}".format(epoch, training_loss))
         sl.save_state(epoch, step, model.state_dict(), optimizer.state_dict())
         
@@ -91,7 +91,7 @@ def train(opt, vis):
 #        print("Val Set Loss at epoch {} : {}".format(epoch + 1, val_loss))
 
         vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([training_loss]), win = 'val and train loss', update = 'append' if globle_step > 0 else None, name = 'train loss')
-        vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([val_loss]), win = 'val and train loss', update = 'append' if globle_step > 0 else None, name = 'Val loss')
+        vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([val_loss]), win = 'val and train loss', update = 'append', name = 'Val loss')
 
         globle_step += 1
         
@@ -129,5 +129,5 @@ def val(model, dataloader):
 #%%
 if __name__ == '__main__':
     config = Config()
-    vis = visdom.Visdom(env = "0402")
+    vis = visdom.Visdom(env = "Our_basic module_more channel")
     train(config, vis)

@@ -144,7 +144,8 @@ class DehazePyramid(BasicModule):
         for i in range(self.num):
             y.append(self.db[i](x) + y[i-1] if i != 0 else self.db[i](x))
         y = torch.cat(y, dim = 1)
-        y = self.conv(y)
+        if self.num != 1:
+            y = self.conv(y)
         return y
 
 #%%
@@ -164,12 +165,19 @@ class DehazeNet(BasicModule):
         else:
             self.net.add_module('DP1', DehazePyramid(3, 8, kernel_size, rate_num, conv, ranking, dilation))
         for i in range(2, pyramid_num + 1):          
-            self.net.add_module('BN' + str(i - 1), nn.BatchNorm2d(8))
+            self.net.add_module('BN' + str(i - 1), nn.BatchNorm2d(2 ** (i + 1)))
             self.net.add_module('ReLU' + str(i - 1), nn.ReLU(inplace = True))
-            if i == pyramid_num - 1:
-                self.net.add_module('DP' + str(i), DehazePyramid(8, 3, kernel_size, rate_num, conv, ranking, dilation))
+            if i == pyramid_num:
+                self.net.add_module('DP' + str(i), DehazePyramid(2 ** (i + 1), 3, kernel_size, rate_num, conv, ranking, dilation))
             else:
-                self.net.add_module('DP' + str(i), DehazePyramid(8, 8, kernel_size, rate_num, conv, ranking, dilation))
+                self.net.add_module('DP' + str(i), DehazePyramid(2 ** (i + 1), 2 ** (i + 2), kernel_size, rate_num, conv, ranking, dilation))
+#        for i in range(2, pyramid_num + 1):
+#            self.net.add_module('BN' + str(i - 1), nn.BatchNorm2d(8))
+#            self.net.add_module('ReLU' + str(i - 1), nn.ReLU(inplace = True))
+#            if i == pyramid_num:
+#                self.net.add_module('DP' + str(i), DehazePyramid(8, 3, kernel_size, rate_num, conv, ranking, dilation))
+#            else:
+#                self.net.add_module('DP' + str(i), DehazePyramid(8, 8, kernel_size, rate_num, conv, ranking, dilation))
 
         
     def forward(self, x):
