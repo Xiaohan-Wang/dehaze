@@ -94,7 +94,7 @@ class DehazeBlock(BasicModule):
         super().__init__()
         self.conv = nn.Conv2d(in_channel, out_channel, kernel_size, 1, (kernel_size - 1)// 2 * dilation, dilation, bias = True)
         self.bn = nn.BatchNorm2d(out_channel)
-        self.relu = nn.ReLU(inplace = True)
+        self.relu = nn.LeakyReLU(inplace = True)
         
         self.has_conv = conv
         self.has_ranking = ranking
@@ -166,14 +166,14 @@ class DehazeNet(BasicModule):
             self.net.add_module('DP1', DehazePyramid(3, 8, kernel_size, rate_num, conv, ranking, dilation))
         for i in range(2, pyramid_num + 1):          
             self.net.add_module('BN' + str(i - 1), nn.BatchNorm2d(2 ** (i + 1)))
-            self.net.add_module('ReLU' + str(i - 1), nn.ReLU(inplace = True))
+            self.net.add_module('LeakyReLU' + str(i - 1), nn.LeakyReLU(inplace = True))
             if i == pyramid_num:
                 self.net.add_module('DP' + str(i), DehazePyramid(2 ** (i + 1), 3, kernel_size, rate_num, conv, ranking, dilation))
             else:
                 self.net.add_module('DP' + str(i), DehazePyramid(2 ** (i + 1), 2 ** (i + 2), kernel_size, rate_num, conv, ranking, dilation))
 #        for i in range(2, pyramid_num + 1):
 #            self.net.add_module('BN' + str(i - 1), nn.BatchNorm2d(8))
-#            self.net.add_module('ReLU' + str(i - 1), nn.ReLU(inplace = True))
+#            self.net.add_module('LeakyReLU' + str(i - 1), nn.LeakyReLU(inplace = True))
 #            if i == pyramid_num:
 #                self.net.add_module('DP' + str(i), DehazePyramid(8, 3, kernel_size, rate_num, conv, ranking, dilation))
 #            else:

@@ -74,11 +74,11 @@ def train(opt, vis):
             step += 1
             
             if step % opt.display_iter == 0:
-                print("Loss at epoch {} step {}: {}".format(epoch + 1, step, loss))
+                print("Loss at epoch {} step {}: {}".format(epoch, step, loss))
                 vis.line(X = torch.tensor([step]), Y = torch.tensor([loss]), win = 'train loss', update = 'append' if step > 0 else None)
             if step % opt.sample_iter == 0:
                 torchvision.utils.save_image(torch.cat((input_data, target_data, output_result), dim = 0), \
-                                             opt.output_sample + '/epoch{}_step{}.jpg'.format(epoch + 1, step), nrow = 8)
+                                             opt.output_sample + '/epoch{}_step{}.jpg'.format(epoch + 1, step), nrow = opt.batch_size)
             if os.path.exists(opt.debug_file):
                 import ipdb
                 ipdb.set_trace()

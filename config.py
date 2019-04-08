@@ -21,7 +21,7 @@ class Config(object):
     
     ori_img_size = (460, 620)
     resized_img_size = (int(460/4), int(620/4))
-    batch_size = 8
+    batch_size = 4
     val_batch_size = 1
     num_workers = 4
     lr = 0.0001 # initial learning rate
