@@ -81,6 +81,27 @@ class RankingFunc(Function):
 #    return x
 
 #%%
+class BReLU(Function):
+    @staticmethod
+    def forward(ctx, x):
+        x[x > 1] = 1
+        x[x < 0] = 0
+        ctx.save_for_backward(x)
+        return x
+    
+    @staticmethod
+    def backward(ctx, grad_y):
+        x = ctx.saved_variables[0]
+        grad = torch.ones(x.size())
+        if torch.cuda.is_available():
+            grad = grad.cuda()
+        grad[x == 1] = 0
+        grad[x == 0] = 0
+        return grad_y * grad
+            
+        
+                
+#%%
 class DehazeBlock(BasicModule):
     def __init__(self, in_channel, out_channel, kernel_size, dilation = 1, conv = True, ranking = False):
         """
@@ -94,7 +115,7 @@ class DehazeBlock(BasicModule):
         super().__init__()
         self.conv = nn.Conv2d(in_channel, out_channel, kernel_size, 1, (kernel_size - 1)// 2 * dilation, dilation, bias = True)
         self.bn = nn.BatchNorm2d(out_channel)
-        self.relu = nn.LeakyReLU(inplace = True)
+        self.relu = nn.ReLU(inplace = True)
         
         self.has_conv = conv
         self.has_ranking = ranking
@@ -164,21 +185,32 @@ class DehazeNet(BasicModule):
             self.net.add_module('DP1', DehazePyramid(6, 8, kernel_size, rate_num, conv, ranking, dilation))
         else:
             self.net.add_module('DP1', DehazePyramid(3, 8, kernel_size, rate_num, conv, ranking, dilation))
-        for i in range(2, pyramid_num + 1):          
-            self.net.add_module('BN' + str(i - 1), nn.BatchNorm2d(2 ** (i + 1)))
-            self.net.add_module('LeakyReLU' + str(i - 1), nn.LeakyReLU(inplace = True))
-            if i == pyramid_num:
-                self.net.add_module('DP' + str(i), DehazePyramid(2 ** (i + 1), 3, kernel_size, rate_num, conv, ranking, dilation))
-            else:
-                self.net.add_module('DP' + str(i), DehazePyramid(2 ** (i + 1), 2 ** (i + 2), kernel_size, rate_num, conv, ranking, dilation))
+#        for i in range(2, pyramid_num + 1):          
+#            self.net.add_module('BN' + str(i - 1), nn.BatchNorm2d(2 ** (i + 1)))
+#            self.net.add_module('ReLU' + str(i - 1), nn.ReLU(inplace = True))
+#            if i == pyramid_num:
+#                self.net.add_module('DP' + str(i), DehazePyramid(2 ** (i + 1), 3, kernel_size, rate_num, conv, ranking, dilation))
+#            else:
+#                self.net.add_module('DP' + str(i), DehazePyramid(2 ** (i + 1), 2 ** (i + 2), kernel_size, rate_num, conv, ranking, dilation))
 #        for i in range(2, pyramid_num + 1):
 #            self.net.add_module('BN' + str(i - 1), nn.BatchNorm2d(8))
-#            self.net.add_module('LeakyReLU' + str(i - 1), nn.LeakyReLU(inplace = True))
+#            self.net.add_module('ReLU' + str(i - 1), nn.ReLU(inplace = True))
 #            if i == pyramid_num:
 #                self.net.add_module('DP' + str(i), DehazePyramid(8, 3, kernel_size, rate_num, conv, ranking, dilation))
 #            else:
 #                self.net.add_module('DP' + str(i), DehazePyramid(8, 8, kernel_size, rate_num, conv, ranking, dilation))
-
+        for i in range(2, pyramid_num):
+            self.net.add_module('BN' + str(i - 1), nn.BatchNorm2d(8))
+            self.net.add_module('ReLU' + str(i - 1), nn.ReLU(inplace = True))
+            self.net.add_module('DP' + str(i), DehazePyramid(8, 8, kernel_size, rate_num, conv, ranking, dilation))
+        self.BN4 = nn.BatchNorm2d(11)
+        self.DP5 = DehazePyramid(11, 3, kernel_size, rate_num, conv, ranking, dilation)
+        
         
     def forward(self, x):
-        return self.net(x)
+#        return self.net(x)
+        x1 = self.net(x)
+        x2 = nn.functional.relu(x1)
+        x3 = self.DP5(self.BN4(torch.cat([x, x2], dim = 1)))
+        x4 = BReLU.apply(x3)
+        return x4

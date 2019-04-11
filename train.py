@@ -78,7 +78,7 @@ def train(opt, vis):
                 vis.line(X = torch.tensor([step]), Y = torch.tensor([loss]), win = 'train loss', update = 'append' if step > 0 else None)
             if step % opt.sample_iter == 0:
                 torchvision.utils.save_image(torch.cat((input_data, target_data, output_result), dim = 0), \
-                                             opt.output_sample + '/epoch{}_step{}.jpg'.format(epoch + 1, step), nrow = opt.batch_size)
+                                             opt.output_sample + '/epoch{}_step{}.jpg'.format(epoch, step), nrow = opt.batch_size)
             if os.path.exists(opt.debug_file):
                 import ipdb
                 ipdb.set_trace()
@@ -129,5 +129,5 @@ def val(model, dataloader):
 #%%
 if __name__ == '__main__':
     config = Config()
-    vis = visdom.Visdom(env = "Our_basic module_more channel")
+    vis = visdom.Visdom(env = "Our_basic module_connections between layers_BReLU")
     train(config, vis)
