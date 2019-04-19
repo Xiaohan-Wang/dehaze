@@ -1,13 +1,13 @@
 import os
 from PIL import Image
 from torch.utils import data
-from utils.object_seg import watershed_seg as seg
+from utils.seg.watershed import watershed_seg as seg
 
 class DehazingSet(data.Dataset):
     def __init__(self, root, transform, is_train):
         self.trans_path = root + '/trans/'
-        self.gt_imgs_path = root + '/gt/'
-        self.seg_path = root + '/seg/'
+        self.gt_imgs_path = root + '/clear/'
+        self.seg_path = root + '/marks/'
         hazy_imgs = os.listdir(root + '/hazy')
         self.hazy_imgs = [root + '/hazy/' + img for img in hazy_imgs]
         self.hazy_imgs.sort()

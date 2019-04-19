@@ -20,7 +20,7 @@ from utils.airlight import estimate_airlight
 #%%
 def train(opt, vis):
     #step1: model
-    model = DehazeNet(opt.layer_num, opt.channels, opt.kernel_size_num, opt.kernel_size)
+    model = DehazeNet(opt.layer_num, opt.in_channels,opt.out_channels, opt.kernel_size_num, opt.kernel_size)
     if torch.cuda.is_available():
         model = model.cuda()
 
@@ -56,7 +56,7 @@ def train(opt, vis):
             if torch.cuda.is_available():
                 hazy_img = hazy_img.cuda()
                 trans_img = trans_img.cuda()
-                if opt.seg:
+                if opt.has_seg:
                     seg_img = seg_img.cuda()
                     input_data = torch.cat([hazy_img, seg_img], dim = 1)
                 else:
@@ -75,11 +75,11 @@ def train(opt, vis):
             step += 1
             
             if step % opt.display_iter == 0:
-                print("Loss at epoch {} iteration {}: {}".format(epoch, iteration, loss))
+                print("Loss at epoch {} iteration {}: {}".format(epoch, iteration + 1, loss))
                 vis.line(X = torch.tensor([step]), Y = torch.tensor([loss]), win = 'train loss', update = 'append' if step > 0 else None)
             if step % opt.sample_iter == 0:
                 torchvision.utils.save_image(torch.cat((trans_img, output_result), dim = 0), \
-                                             opt.output_sample + '/epoch{}_iteration{}.jpg'.format(epoch, iteration), nrow = opt.batch_size)
+                                             opt.output_sample + '/epoch{}_iteration{}.jpg'.format(epoch, iteration + 1), nrow = opt.batch_size)
             if os.path.exists(opt.debug_file):
                 import ipdb
                 ipdb.set_trace()
@@ -87,12 +87,12 @@ def train(opt, vis):
         training_loss = total_loss / (opt.train_num // opt.batch_size)
         sl.save_state(epoch, step, model.state_dict(), optimizer.state_dict())
         
-        val_loss, val_dehazing_loss = val(model, val_dataloader, opt.seg, opt.at_method)
+        val_loss, val_dehazing_loss = val(model, val_dataloader, opt, epoch)
 
         vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([training_loss]), win = 'val and train loss', update = 'append' if globle_step > 0 else None, name = 'train loss')
         vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([val_loss]), win = 'val and train loss', update = 'append', name = 'Val loss')
         
-        vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([val_dehazing_loss]), win = "val dehazing result loss", updata = 'append' if globle_step > 0 else None)
+        vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([val_dehazing_loss]), win = "val dehazing result loss", update = 'append' if globle_step > 0 else None)
         globle_step += 1
         
         #if loss does not decrease, decrease learning rate
@@ -102,7 +102,7 @@ def train(opt, vis):
         previous_loss = training_loss
 
 #%%       
-def val(model, dataloader, has_seg, at_method):
+def val(model, dataloader, opt, epoch):
     model.eval() #evaluation mode
     
     loss_total = 0
@@ -112,7 +112,8 @@ def val(model, dataloader, has_seg, at_method):
         if torch.cuda.is_available():
             hazy_img = hazy_img.cuda()
             trans_img = trans_img.cuda()
-            if has_seg:
+            gt_img = gt_img.cuda()
+            if opt.has_seg:
                 seg_img = seg_img.cuda()
                 input_data = torch.cat([hazy_img, seg_img], dim = 1)
             else:
@@ -122,14 +123,23 @@ def val(model, dataloader, has_seg, at_method):
         loss = nn.MSELoss()(output_result, trans_img)
         loss_total += loss.detach()
         
-        atmosphere = estimate_airlight(hazy_img.squeeze(0), output_result.squeeze(0), at_method)
-        dehazing_result = (hazy_img - atmosphere * (1 - output_result)) / output_result
+        atmosphere = estimate_airlight(hazy_img.squeeze(0), output_result.squeeze(0), opt.at_method)
+        a_t = torch.mm(atmosphere.unsqueeze(1), (1 - output_result.squeeze(0).view(1, -1))).view(hazy_img.size())
+        dehazing_result = (hazy_img - a_t) / output_result
         dehazing_loss = nn.MSELoss()(dehazing_result, gt_img)
         dehazing_loss_total += dehazing_loss.detach()
         img_num += 1
+        if iteration % opt.result_sample_iter == 0:
+            torchvision.utils.save_image(torch.cat((hazy_img, gt_img, dehazing_result), dim = 0), \
+                                         opt.dehazing_result_sample + '/epoch{}_iteration{}.jpg'.format(epoch, iteration), nrow = 3)            
     
     loss_avg = loss_total / img_num
     dehazing_loss_avg = dehazing_loss_total / img_num
     model.train() #back to train mode
     
     return loss_avg, dehazing_loss_avg
+
+if __name__ == '__main__':
+    opt = Config()
+    vis = visdom.Visdom(env = "new arch_no_connection_max I")
+    train(opt, vis)

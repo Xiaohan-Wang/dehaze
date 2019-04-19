@@ -38,7 +38,7 @@ class DehazePyramid(nn.Module):
         self.net = nn.ModuleList()
         for i in range(kernel_num):
             ks = kernel_size[i] #kernel_size
-            self.net.append(nn.Conv2d(in_channels, out_channels, ks, padding = (ks - 1) / 2))
+            self.net.append(nn.Conv2d(in_channels, out_channels, ks, padding = (ks - 1) // 2))
     
     def forward(self, x):
         y = []
@@ -66,27 +66,27 @@ class DehazePyramid(nn.Module):
    
 #%%
 class DehazeNet(nn.Module):
-    def __init__(self, layer_num, channels, kernel_size_num, kernel_size):
-        super.__init__()
+    def __init__(self, layer_num, in_channels, out_channels, kernel_size_num, kernel_size):
+        super().__init__()
         self.net = nn.ModuleList()
         for i in range(layer_num - 1):
-            in_channel = channels[i]
-            out_channel = channels[i + 1]
+            in_channel = in_channels[i]
+            out_channel = out_channels[i]
             #TODO: change kernel size?
             ks = kernel_size[i]
             ksn = kernel_size_num[i]
-            self.net.append('layer' + str(i), DehazePyramid(in_channel, out_channel // ksn, ksn, ks))
+            self.net.append(DehazePyramid(in_channel, out_channel // ksn, ksn, ks))
     
     def forward(self, x):
         #TODO: try to change aux
-        aux1 = x
-        aux2 = x
-        aux3 = torch.tensor([])
-        aux4 = torch.tensor([])
-        x1 = nn.ReLU(self.net[0](x))   
-        x2 = nn.ReLU(self.net[1](torch.cat([x1, aux1], dim = 1)))
-        x3 = nn.ReLU(self.net[2](torch.cat([x2, aux2], dim = 1)))        
-        x4 = nn.ReLU(self.net[3](torch.cat([x3, aux3], dim = 1)))
+        aux1 = torch.tensor([]).cuda()
+        aux2 = torch.tensor([]).cuda()
+        aux3 = torch.tensor([]).cuda()
+        aux4 = torch.tensor([]).cuda()
+        x1 = nn.functional.relu(self.net[0](x))   
+        x2 = nn.functional.relu(self.net[1](torch.cat([x1, aux1], dim = 1)))
+        x3 = nn.functional.relu(self.net[2](torch.cat([x2, aux2], dim = 1)))
+        x4 = nn.functional.relu(self.net[3](torch.cat([x3, aux3], dim = 1)))
         x5 = self.net[4](torch.cat([x4, aux4], dim = 1))
         return x5
         

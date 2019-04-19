@@ -35,4 +35,3 @@ if __name__ == '__main__':
         plt.imsave(marks_path + '/' + file, marks, cmap='Greys_r')
         
   
-            
