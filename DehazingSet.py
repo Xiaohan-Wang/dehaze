@@ -7,7 +7,7 @@ class DehazingSet(data.Dataset):
     def __init__(self, root, transform, is_train):
         self.trans_path = root + '/trans/'
         self.gt_imgs_path = root + '/clear/'
-        self.seg_path = root + '/marks/'
+        self.seg_path = root + '/watershed/'
         hazy_imgs = os.listdir(root + '/hazy')
         self.hazy_imgs = [root + '/hazy/' + img for img in hazy_imgs]
         self.hazy_imgs.sort()
