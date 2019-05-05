@@ -7,3 +7,8 @@ checkpoints/
 output_sample/
 dehazing_result_sample/
 dataset/
+refined_trans/
+trans/
+test_result_mI/
+test_result_mm/
+test_result_maxI/

@@ -20,19 +20,19 @@ class DehazingSet(data.Dataset):
         trans_path = self.trans_path + hazy_path.split('/')[-1].split('_0.')[0] + '.png'
         gt_path = self.gt_imgs_path + hazy_path.split('_')[0].split('/')[-1] + '.png'
         trans_img = Image.open(trans_path)
-        hazy_img = Image.open(hazy_path)
+        hazy_im = Image.open(hazy_path)
         gt_img = Image.open(gt_path)
         if self.is_train:
             hazy_seg = self.seg_path + hazy_path.split('/')[-1]
             seg_img = Image.open(hazy_seg).convert("L")
         else:
-            seg_img = Image.fromarray(seg(hazy_img))
+            seg_img = Image.fromarray(seg(hazy_im))
         if self.transform:
             trans_img = self.transform(trans_img)
-            hazy_img = self.transform(hazy_img)
+            hazy_img = self.transform(hazy_im)
             seg_img = self.transform(seg_img)
             gt_img = self.transform(gt_img)
-        return hazy_img, trans_img, seg_img, gt_img
+        return hazy_img, trans_img, seg_img, gt_img, hazy_im
     
     def __len__(self):
         return len(self.hazy_imgs)

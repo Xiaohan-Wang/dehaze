@@ -6,23 +6,23 @@ import torch.nn as nn
 from torch.autograd import Function
 
 #%%
-#class BReLU(Function):
-#    @staticmethod
-#    def forward(ctx, x):
-#        x[x > 1] = 1
-#        x[x < 0] = 0
-#        ctx.save_for_backward(x)
-#        return x
-#    
-#    @staticmethod
-#    def backward(ctx, grad_y):
-#        x = ctx.saved_variables[0]
-#        grad = torch.ones(x.size())
-#        if torch.cuda.is_available():
-#            grad = grad.cuda()
-#        grad[x == 1] = 0
-#        grad[x == 0] = 0
-#        return grad_y * grad
+class BReLU(Function):
+    @staticmethod
+    def forward(ctx, x):
+        x[x > 1] = 1
+        x[x < 0] = 0
+        ctx.save_for_backward(x)
+        return x
+    
+    @staticmethod
+    def backward(ctx, grad_y):
+        x = ctx.saved_variables[0]
+        grad = torch.ones(x.size())
+        if torch.cuda.is_available():
+            grad = grad.cuda()
+        grad[x == 1] = 0
+        grad[x == 0] = 0
+        return grad_y * grad
 
 #%%
 class DehazePyramid(nn.Module):
@@ -79,14 +79,18 @@ class DehazeNet(nn.Module):
     
     def forward(self, x):
         #TODO: try to change aux
-        aux1 = torch.tensor([]).cuda()
-        aux2 = torch.tensor([]).cuda()
-        aux3 = torch.tensor([]).cuda()
-        aux4 = torch.tensor([]).cuda()
+#        aux1 = torch.tensor([]).cuda()
+#        aux1 = x.cuda()
+#        aux1 = x[:, 0:3, :, :].cuda()
+        aux1 = x[:, 3, :, :].unsqueeze(1).cuda()
+        aux2 = x[:, 3, :, :].unsqueeze(1).cuda()
+        aux3 = x[:, 3, :, :].unsqueeze(1).cuda()
+        aux4 = x[:, 3, :, :].unsqueeze(1).cuda()
         x1 = nn.functional.relu(self.net[0](x))   
         x2 = nn.functional.relu(self.net[1](torch.cat([x1, aux1], dim = 1)))
         x3 = nn.functional.relu(self.net[2](torch.cat([x2, aux2], dim = 1)))
         x4 = nn.functional.relu(self.net[3](torch.cat([x3, aux3], dim = 1)))
+#        x5 = BReLU.apply(self.net[4](torch.cat([x4, aux4], dim = 1)))
         x5 = self.net[4](torch.cat([x4, aux4], dim = 1))
         return x5
         
