@@ -8,7 +8,7 @@ def refine_trans(imgs):
     opt = Config()
     for img in imgs:
         trans = cv2.imread(img)
-        hazy = cv2.imread(opt.test_data_root + "/hazy/" + img.split("/")[-1])
+        hazy = cv2.imread("/home/ws/Desktop/benchmark/" + img.split("/")[-1].split(".")[0] + ".png")
         hazy = hazy[:,:,::-1]
         refined_trans = cv2.ximgproc.guidedFilter(guide=hazy, src=trans, radius=60, eps=10)
         cv2.imwrite(opt.refined_trans + '/' + img.split("/")[-1], refined_trans)

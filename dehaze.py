@@ -50,6 +50,6 @@ def dehaze(imgs):
 #        torchvision.utils.save_image(dehazing_result3, opt.test_result_maxI + '/' + output_name3)
                
 if __name__ == '__main__':
-    imgs = glob.glob('/home/ws/datasets/SOTS(Testing Set)/(indoor)nyuhaze500/hazy/*')
+    imgs = glob.glob('/home/ws/Desktop/benchmark/*')
     dehaze(imgs)
     print("Done!")

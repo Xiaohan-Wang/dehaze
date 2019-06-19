@@ -56,7 +56,6 @@ def train(opt, vis):
         total_loss = 0
 
         for iteration, (hazy_img, trans_img, seg_img, _) in enumerate(train_dataloader):
-
             if torch.cuda.is_available():
                 hazy_img = hazy_img.cuda()
                 trans_img = trans_img.cuda()
@@ -80,7 +79,7 @@ def train(opt, vis):
             
             if step % opt.display_iter == 0:
                 print("Loss at epoch {} iteration {}: {}".format(epoch, iteration + 1, loss))
-                vis.line(X = torch.tensor([step]), Y = torch.tensor([loss]), win = 'train loss', update = 'append' if step > 0 else None)
+                vis.line(X = torch.tensor([step]), Y = torch.tensor([loss]), win = 'step train loss', update = 'append' if step > 0 else None)
             if step % opt.sample_iter == 0:
                 temp_result = output_result.detach()
                 for i in range(opt.batch_size):
@@ -99,9 +98,10 @@ def train(opt, vis):
         
         val_loss, val_dehazing_loss1, val_dehazing_loss2, val_dehazing_loss3, val_dehazing_loss4 = val(model, val_dataloader, opt, epoch)
 
-        vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([training_loss]), win = 'val and train loss', update = 'append' if globle_step > 0 else None, name = 'train loss')
-        vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([val_loss]), win = 'val and train loss', update = 'append', name = 'Val loss')
-        
+#        vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([training_loss]), win = 'train loss', update = 'append' if globle_step > 0 else None, name = 'without transmission similarity', opts = dict(xlable= 'number of epoch', ylable= 'MSE on training set', xtick = True, ytick = True, showlegend = True))
+#        vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([val_loss]), win = 'val loss', update = 'append' if globle_step > 0 else None, name = 'without transmission similarity', opts = dict(xlable= 'number of epoch', ylable= 'MSE on test set', xtick = True, ytick = True, showlegend = True))
+        vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([training_loss]), win = 'train loss', update = 'append', name = 'with transmission similarity', opts = dict(xlabel= 'number of epoch', ylabel= 'MSE on training set', xtick = True, ytick = True, showlegend = True))
+        vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([val_loss]), win = 'val loss', update = 'append', name = 'with transmission similarity', opts = dict(xlabel= 'number of epoch', ylabel= 'MSE on test set', xtick = True, ytick = True, showlegend = True))      
         vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([val_dehazing_loss1]), win = "val dehazing result loss", update = 'append' if globle_step > 0 else None, name = opt.at_method1)
         vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([val_dehazing_loss2]), win = "val dehazing result loss", update = 'append', name = opt.at_method2)
         vis.line(X = torch.tensor([globle_step]), Y = torch.tensor([val_dehazing_loss3]), win = "val dehazing result loss", update = 'append', name = opt.at_method3)
@@ -179,5 +179,5 @@ def val(model, dataloader, opt, epoch):
 
 if __name__ == '__main__':
     opt = Config()
-    vis = visdom.Visdom(env = "new arch_(seg seg seg seg)_0502_less channel")
+    vis = visdom.Visdom(env = " with/without transmission similarity")
     train(opt, vis)

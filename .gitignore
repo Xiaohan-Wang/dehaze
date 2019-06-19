@@ -12,3 +12,6 @@ trans/
 test_result_mI/
 test_result_mm/
 test_result_maxI/
+refined_trans(indoor)/
+test_result_mm(outdoor)/
+trans(indoor)/

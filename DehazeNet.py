@@ -92,6 +92,13 @@ class DehazeNet(nn.Module):
         x4 = nn.functional.relu(self.net[3](torch.cat([x3, aux3], dim = 1)))
 #        x5 = BReLU.apply(self.net[4](torch.cat([x4, aux4], dim = 1)))
         x5 = self.net[4](torch.cat([x4, aux4], dim = 1))
+        
+#        x1 = nn.functional.relu(self.net[0](x[:, 0:3, :, :]))   
+#        x2 = nn.functional.relu(self.net[1](x1))
+#        x3 = nn.functional.relu(self.net[2](x2))
+#        x4 = nn.functional.relu(self.net[3](x3))
+##        x5 = BReLU.apply(self.net[4](torch.cat([x4, aux4], dim = 1)))
+#        x5 = self.net[4](x4)
         return x5
         
 

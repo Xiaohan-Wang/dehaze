@@ -14,8 +14,8 @@ class Config(object):
     test_result_maxI = 'test_result_maxI'
     trans = "trans"
     refined_trans = "refined_trans"
-#    load_model_path = None
-    load_model_path = 'checkpoints/0503_13:06:07_epoch70_step110250.pth'
+    load_model_path = None
+#    load_model_path = 'checkpoints/0503_13:06:07_epoch70_step110250.pth'
     
     train_num = 12600
     val_num = 1390
@@ -24,6 +24,7 @@ class Config(object):
     
     layer_num = 6 
     in_channels = [4, 4, 4, 4, 4]
+#    in_channels = [3, 3, 3, 3, 3]
     out_channels = [3, 3, 3, 3, 1]
     kernel_size_num = [1, 1, 1, 1, 1]
     kernel_size = [[7], [7], [7], [7], [7]]
@@ -42,7 +43,7 @@ class Config(object):
     lr = 0.0001 # initial learning rate
     weight_decay = 0.0001 
     
-    max_epoch = 1000
+    max_epoch = 20
     display_iter = 10
     sample_iter = 100
     result_sample_iter = 50

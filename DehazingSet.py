@@ -32,7 +32,8 @@ class DehazingSet(data.Dataset):
             hazy_img = self.transform(hazy_im)
             seg_img = self.transform(seg_img)
             gt_img = self.transform(gt_img)
-        return hazy_img, trans_img, seg_img, gt_img, hazy_im
+#        return hazy_img, trans_img, seg_img, gt_img, hazy_im
+        return hazy_img, trans_img, seg_img, gt_img
     
     def __len__(self):
         return len(self.hazy_imgs)

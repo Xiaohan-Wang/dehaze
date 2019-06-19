@@ -11,6 +11,7 @@ def watershed_seg(img):
     gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
     blur = cv2.GaussianBlur(gray, (5,5), 2)
     edge = cv2.Canny(blur, 80, 150)
+
     
     #find contour
     image, contours,hierarchy=cv2.findContours(edge, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
@@ -45,12 +46,13 @@ def watershed_seg(img):
     
 
 if __name__ == '__main__':
-    marks_path = '/home/ws/datasets/ITS(training set)/watershed'
+    marks_path = '/home/ws/Desktop/watershed'
     os.makedirs(marks_path, exist_ok=True)
     input_path = '/home/ws/datasets/ITS(training set)/hazy'
     for file in os.listdir(input_path):
         img = cv2.imread(input_path + '/' + file)
+#        edge = cv2.imread('/home/ws/Desktop/coh/ITS' + '/' + file, 0)
         marks = watershed_seg(img)
-        plt.imsave(marks_path + '/' + file, marks, cmap='Greys_r')
+        plt.imsave(marks_path + '/' + file, marks)
         
   
